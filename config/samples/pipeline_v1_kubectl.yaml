@@ -1,0 +1,207 @@
+# Example: Using kubectl within Pipeline Steps
+#
+# This example demonstrates how to use kubectl commands within pipeline steps.
+# Steps run with a ServiceAccount that has RBAC permissions to interact with
+# the Kubernetes API.
+---
+# ServiceAccount for pipeline steps to use
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipeline-kubectl
+  namespace: default
+
+---
+# Role with permissions to list and create pods and configmaps
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pipeline-kubectl
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# RoleBinding to grant permissions to the ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipeline-kubectl
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pipeline-kubectl
+subjects:
+- kind: ServiceAccount
+  name: pipeline-kubectl
+  namespace: default
+
+---
+# Pipeline that uses kubectl to interact with Kubernetes
+apiVersion: pipeline.yaacov.io/v1
+kind: Pipeline
+metadata:
+  name: pipeline-kubectl-demo
+  namespace: default
+spec:
+  # Use the service account with RBAC permissions
+  serviceAccountName: pipeline-kubectl
+
+  # Use fedora image for all steps
+  podTemplate:
+    image: fedora:latest
+    env:
+      - name: DEMO_NAME
+        value: "kubectl-demo"
+
+  steps:
+    # Step 1: Install kubectl and verify connectivity
+    - name: install-kubectl
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    echo "=== Installing kubectl ==="
+                    dnf install -y kubectl
+                    
+                    echo ""
+                    echo "=== Verifying cluster connectivity ==="
+                    kubectl version --client
+                    kubectl cluster-info
+                    
+                    echo ""
+                    echo "=== Current namespace ==="
+                    cat /var/run/secrets/kubernetes.io/serviceaccount/namespace
+            restartPolicy: Never
+
+    # Step 2: List pods in the current namespace
+    - name: list-pods
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    dnf install -y kubectl
+                    
+                    echo "=== Listing all pods in current namespace ==="
+                    kubectl get pods
+                    
+                    echo ""
+                    echo "=== Listing pipeline-related pods ==="
+                    kubectl get pods -l pipeline.yaacov.io/pipeline=pipeline-kubectl-demo
+            restartPolicy: Never
+
+    # Step 3: Create a ConfigMap
+    - name: create-configmap
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    dnf install -y kubectl
+                    
+                    echo "=== Creating ConfigMap ==="
+                    kubectl create configmap $DEMO_NAME \
+                      --from-literal=message="Hello from pipeline step" \
+                      --from-literal=timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                      --dry-run=client -o yaml | kubectl apply -f -
+                    
+                    echo ""
+                    echo "=== ConfigMap created ==="
+                    kubectl get configmap $DEMO_NAME -o yaml
+            restartPolicy: Never
+
+    # Step 4: Read the ConfigMap
+    - name: read-configmap
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    dnf install -y kubectl
+                    
+                    echo "=== Reading ConfigMap ==="
+                    kubectl get configmap $DEMO_NAME -o jsonpath='{.data.message}'
+                    echo ""
+                    kubectl get configmap $DEMO_NAME -o jsonpath='{.data.timestamp}'
+                    echo ""
+            restartPolicy: Never
+
+    # Step 5: Create a test pod
+    - name: create-test-pod
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    dnf install -y kubectl
+                    
+                    echo "=== Creating test pod ==="
+                    cat <<EOF | kubectl apply -f -
+                    apiVersion: v1
+                    kind: Pod
+                    metadata:
+                      name: $DEMO_NAME-test-pod
+                      labels:
+                        app: $DEMO_NAME
+                    spec:
+                      containers:
+                      - name: test
+                        image: busybox:latest
+                        command: ["sh", "-c", "echo 'Test pod running' && sleep 30"]
+                      restartPolicy: Never
+                    EOF
+                    
+                    echo ""
+                    echo "=== Waiting for pod to start ==="
+                    kubectl wait --for=condition=Ready pod/$DEMO_NAME-test-pod --timeout=30s || true
+                    
+                    echo ""
+                    echo "=== Pod status ==="
+                    kubectl get pod $DEMO_NAME-test-pod
+            restartPolicy: Never
+
+    # Step 6: Cleanup - delete the test pod and configmap
+    - name: cleanup
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    dnf install -y kubectl
+                    
+                    echo "=== Cleaning up resources ==="
+                    kubectl delete pod $DEMO_NAME-test-pod --ignore-not-found=true
+                    kubectl delete configmap $DEMO_NAME --ignore-not-found=true
+                    
+                    echo ""
+                    echo "=== Cleanup complete ==="
+                    kubectl get pods -l app=$DEMO_NAME
+                    kubectl get configmaps $DEMO_NAME --ignore-not-found=true
+            restartPolicy: Never
+

@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pipeline-workspace
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  # No storageClassName specified - uses cluster default
+---
+apiVersion: pipeline.yaacov.io/v1
+kind: Pipeline
+metadata:
+  name: pipeline-cicd-simple
+  namespace: default
+spec:
+  serviceAccountName: default
+
+  # Shared volume mounted at /workspace for all steps
+  # Uses PVC to persist data between steps (emptyDir does not work across job pods)
+  sharedVolume:
+    name: workspace
+    mountPath: /workspace
+    persistentVolumeClaim:
+      claimName: pipeline-workspace
+
+  # Shared settings for all steps
+  podTemplate:
+    image: registry.access.redhat.com/ubi9/go-toolset:latest
+    env:
+      - name: REPO_URL
+        value: "https://github.com/yaacov/tree-search-language.git"
+
+  steps:
+    # Sequential steps - no runIf needed, they run in order
+    - name: clone
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    cd /workspace
+                    git clone --depth 1 $REPO_URL repo
+            restartPolicy: Never
+
+    - name: lint
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    cd /workspace/repo/v6
+                    make install-tools
+                    make lint
+            restartPolicy: Never
+
+    - name: deploy
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - |
+                    echo "Pipeline completed successfully!"
+            restartPolicy: Never
+
+    # Conditional steps - only run based on previous results
+    - name: send-success-mail
+      runIf:
+        steps: [deploy]
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - echo "Pipeline succeeded! Sending success notification..."
+            restartPolicy: Never
+
+    - name: send-failure-mail
+      runIf:
+        condition: fail
+        operator: or
+        steps: [clone, lint, deploy]
+      jobSpec:
+        template:
+          spec:
+            containers:
+              - name: main
+                command: [bash, -c]
+                args:
+                  - echo "Pipeline failed! Sending failure notification..."
+            restartPolicy: Never
+
