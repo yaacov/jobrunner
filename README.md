@@ -101,6 +101,7 @@ spec:
 
 For more detailed information, see the following guides:
 
+- [Deployment](docs/deployment.md) - Install JobRunner on your cluster
 - [Conditional Execution](docs/conditional-execution.md) - Control step execution based on conditions
 - [Shared Volumes](docs/shared-volumes.md) - Share data between pipeline steps
 - [Pod Templates](docs/pod-templates.md) - Define shared configuration for all steps
