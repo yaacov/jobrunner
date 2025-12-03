@@ -23,10 +23,11 @@ Kubernetes has a Job resource for running single workloads to completion, but no
 A pipeline breaks work into separate Jobs, giving each step its own container, resources, and lifecycle. This isolation lets you run steps in parallel, retry failures individually, and see exactly where things broke. The tradeoff is more moving parts than a single Job.
 
 Use a pipeline when:
-- Steps can run in parallel
+- You need conditional execution - run steps based on success or failure of others
 - Steps need different container images or resource limits
 - You need to retry individual steps on failure
 - You want per-step logs and status
+- Steps can run in parallel
 
 Use a single Job when:
 - Steps run sequentially and share state
