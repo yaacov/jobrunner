@@ -36,7 +36,7 @@ Use a single Job when:
 
 ## Quick Start
 
-### Install CRDs and Run Operator
+### Install CRDs and Run locally
 
 ```bash
 # Install CRDs
@@ -44,6 +44,14 @@ make install
 
 # Run operator locally
 make run
+```
+
+### Deploy on cluster using pre built image
+
+Deploy directly from GitHub - no clone required (will use pre built image):
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/yaacov/jobrunner/main/dist/install.yaml
 ```
 
 ### Create a Pipeline

@@ -2,26 +2,32 @@
 
 ## Quick Install
 
+Deploy directly from GitHub - no clone required (will use pre built image):
+
 ```bash
-# Clone the repo
-git clone https://github.com/yaacov/jobrunner.git
-cd jobrunner
-
-# Build and push the image (requires access to registry)
-make docker-build docker-push IMG=quay.io/yaacov/jobrunner:latest
-
-# Deploy to cluster
-make deploy IMG=quay.io/yaacov/jobrunner:latest
+kubectl apply -f https://raw.githubusercontent.com/yaacov/jobrunner/main/dist/install.yaml
 ```
 
-## Using a Pre-built Image
+## Build Your Own Image
 
-If an image is already published:
+Build and push a custom image to your registry:
 
 ```bash
 git clone https://github.com/yaacov/jobrunner.git
 cd jobrunner
-make deploy IMG=quay.io/yaacov/jobrunner:latest
+
+# Build and push your custom image
+make docker-build docker-push IMG=your-registry.io/jobrunner:v1.0.0
+
+# Deploy using your image
+make deploy IMG=your-registry.io/jobrunner:v1.0.0
+```
+
+To generate a custom `install.yaml` for distribution:
+
+```bash
+# Generate dist/install.yaml with your image
+make build-installer IMG=your-registry.io/jobrunner:v1.0.0
 ```
 
 ## Uninstall
