@@ -3,7 +3,7 @@
 A job runner runs Kubernetes jobs sequentially. While Kubernetes provides Deployments, StatefulSets, DaemonSets, and more, it lacks a native resource for running jobs in sequence. JobRunner fills this gap with a simple Pipeline CRD.
 
 <p align="center">
-  <img src="docs/jobrunner.jpg" alt="JobRunner" width="300">
+  <img src="docs/jobrunner.png" alt="JobRunner" width="300">
 </p>
 
 ## Overview
