@@ -17,6 +17,21 @@ Kubernetes has a Job resource for running single workloads to completion, but no
 - **In-cluster credentials**: Service account tokens and environment variables pre-configured ([docs](docs/using-kubectl.md))
 - **Status Tracking**: Monitor pipeline and individual step progress
 
+## Why Pipelines?
+
+A pipeline breaks work into separate Jobs, giving each step its own container, resources, and lifecycle. This isolation lets you run steps in parallel, retry failures individually, and see exactly where things broke. The tradeoff is more moving parts than a single Job.
+
+Use a pipeline when:
+- Steps can run in parallel
+- Steps need different container images or resource limits
+- You need to retry individual steps on failure
+- You want per-step logs and status
+
+Use a single Job when:
+- Steps run sequentially and share state
+- All steps use the same image
+- Simplicity matters more than flexibility
+
 ## Quick Start
 
 ### Install CRDs and Run Operator

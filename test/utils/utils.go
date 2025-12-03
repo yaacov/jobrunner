@@ -165,12 +165,31 @@ func IsCertManagerCRDsInstalled() bool {
 	return false
 }
 
-// LoadImageToKindClusterWithName loads a local docker image to the kind cluster
+// LoadImageToKindClusterWithName loads a local container image to the kind cluster
 func LoadImageToKindClusterWithName(name string) error {
 	cluster := "kind"
 	if v, ok := os.LookupEnv("KIND_CLUSTER"); ok {
 		cluster = v
 	}
+
+	// Check if we should use podman (CONTAINER_TOOL=podman)
+	containerTool := os.Getenv("CONTAINER_TOOL")
+	if containerTool == "podman" {
+		// For podman, save the image to a tar archive and load it with kind
+		archivePath := "/tmp/kind-image.tar"
+		saveCmd := exec.Command("podman", "save", "-o", archivePath, name)
+		if _, err := Run(saveCmd); err != nil {
+			return fmt.Errorf("failed to save podman image: %w", err)
+		}
+		defer func() { _ = os.Remove(archivePath) }()
+
+		kindOptions := []string{"load", "image-archive", archivePath, "--name", cluster}
+		cmd := exec.Command("kind", kindOptions...)
+		_, err := Run(cmd)
+		return err
+	}
+
+	// Default: use docker
 	kindOptions := []string{"load", "docker-image", name, "--name", cluster}
 	cmd := exec.Command("kind", kindOptions...)
 	_, err := Run(cmd)

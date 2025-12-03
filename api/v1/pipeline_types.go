@@ -179,23 +179,25 @@ const (
 )
 
 // PipelinePhase represents the current phase of the pipeline
-// +kubebuilder:validation:Enum=Pending;Running;Succeeded;Failed
+// +kubebuilder:validation:Enum=Pending;Running;Suspended;Succeeded;Failed
 type PipelinePhase string
 
 const (
 	PipelinePhasePending   PipelinePhase = "Pending"
 	PipelinePhaseRunning   PipelinePhase = "Running"
+	PipelinePhaseSuspended PipelinePhase = "Suspended"
 	PipelinePhaseSucceeded PipelinePhase = "Succeeded"
 	PipelinePhaseFailed    PipelinePhase = "Failed"
 )
 
 // StepPhase represents the current phase of a step
-// +kubebuilder:validation:Enum=Pending;Running;Succeeded;Failed;Skipped
+// +kubebuilder:validation:Enum=Pending;Running;Suspended;Succeeded;Failed;Skipped
 type StepPhase string
 
 const (
 	StepPhasePending   StepPhase = "Pending"
 	StepPhaseRunning   StepPhase = "Running"
+	StepPhaseSuspended StepPhase = "Suspended"
 	StepPhaseSucceeded StepPhase = "Succeeded"
 	StepPhaseFailed    StepPhase = "Failed"
 	StepPhaseSkipped   StepPhase = "Skipped"

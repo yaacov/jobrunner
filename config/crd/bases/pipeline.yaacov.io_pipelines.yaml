@@ -5361,6 +5361,7 @@ spec:
                 enum:
                 - Pending
                 - Running
+                - Suspended
                 - Succeeded
                 - Failed
                 type: string
@@ -5442,6 +5443,7 @@ spec:
                       enum:
                       - Pending
                       - Running
+                      - Suspended
                       - Succeeded
                       - Failed
                       - Skipped

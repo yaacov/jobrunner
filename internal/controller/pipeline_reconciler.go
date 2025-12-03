@@ -32,8 +32,8 @@ import (
 
 // reconcileDelete handles cleanup when a Pipeline is being deleted
 func (r *PipelineReconciler) reconcileDelete(ctx context.Context, pipeline *pipelinev1.Pipeline) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	log.Info("Deleting pipeline", "pipeline", pipeline.Name, "namespace", pipeline.Namespace)
+	logger := log.FromContext(ctx)
+	logger.Info("Deleting pipeline", "pipeline", pipeline.Name, "namespace", pipeline.Namespace)
 
 	if controllerutil.ContainsFinalizer(pipeline, pipelineFinalizer) {
 		// Cleanup: delete all jobs created by this pipeline
@@ -41,28 +41,28 @@ func (r *PipelineReconciler) reconcileDelete(ctx context.Context, pipeline *pipe
 		if err := r.List(ctx, jobList, client.InNamespace(pipeline.Namespace), client.MatchingLabels{
 			"pipeline.yaacov.io/pipeline": pipeline.Name,
 		}); err != nil {
-			log.Error(err, "Failed to list jobs for cleanup")
+			logger.Error(err, "Failed to list jobs for cleanup")
 			return ctrl.Result{}, err
 		}
 
-		log.Info("Cleaning up jobs", "count", len(jobList.Items))
+		logger.Info("Cleaning up jobs", "count", len(jobList.Items))
 		for i := range jobList.Items {
 			jobName := jobList.Items[i].Name
 			if err := r.Delete(ctx, &jobList.Items[i], client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
-				log.Error(err, "Failed to delete job", "job", jobName)
+				logger.Error(err, "Failed to delete job", "job", jobName)
 				return ctrl.Result{}, err
 			}
-			log.V(1).Info("Deleted job", "job", jobName)
+			logger.V(1).Info("Deleted job", "job", jobName)
 		}
 
 		// Remove finalizer
-		log.V(1).Info("Removing finalizer")
+		logger.V(1).Info("Removing finalizer")
 		controllerutil.RemoveFinalizer(pipeline, pipelineFinalizer)
 		if err := r.Update(ctx, pipeline); err != nil {
-			log.Error(err, "Failed to remove finalizer")
+			logger.Error(err, "Failed to remove finalizer")
 			return ctrl.Result{}, err
 		}
-		log.Info("Pipeline deleted successfully", "pipeline", pipeline.Name)
+		logger.Info("Pipeline deleted successfully", "pipeline", pipeline.Name)
 	}
 
 	return ctrl.Result{}, nil
@@ -70,30 +70,30 @@ func (r *PipelineReconciler) reconcileDelete(ctx context.Context, pipeline *pipe
 
 // reconcilePipeline is the main reconciliation logic for an active Pipeline
 func (r *PipelineReconciler) reconcilePipeline(ctx context.Context, pipeline *pipelinev1.Pipeline) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
-	log.V(1).Info("Reconciling pipeline",
+	logger := log.FromContext(ctx)
+	logger.V(1).Info("Reconciling pipeline",
 		"pipeline", pipeline.Name,
 		"phase", pipeline.Status.Phase,
 		"stepCount", len(pipeline.Spec.Steps))
 
 	// Initialize step statuses if needed
 	if len(pipeline.Status.Steps) == 0 {
-		log.Info("Initializing step statuses")
+		logger.Info("Initializing step statuses")
 		if err := r.initializeStepStatuses(ctx, pipeline); err != nil {
-			log.Error(err, "Failed to initialize step statuses")
+			logger.Error(err, "Failed to initialize step statuses")
 			return ctrl.Result{}, err
 		}
 	}
 
 	// Update status of existing jobs
 	if err := r.updateStepStatuses(ctx, pipeline); err != nil {
-		log.Error(err, "Failed to update step statuses")
+		logger.Error(err, "Failed to update step statuses")
 		return ctrl.Result{}, err
 	}
 
 	// Analyze pipeline completion state
 	pipelineState := r.analyzePipelineState(pipeline)
-	log.V(1).Info("Pipeline state analyzed",
+	logger.V(1).Info("Pipeline state analyzed",
 		"allSucceeded", pipelineState.allSucceeded,
 		"anyFailed", pipelineState.anyFailed,
 		"anyRunning", pipelineState.anyRunning,
@@ -102,25 +102,31 @@ func (r *PipelineReconciler) reconcilePipeline(ctx context.Context, pipeline *pi
 
 	// Update pipeline phase based on analysis
 	if err := r.updatePipelinePhase(ctx, pipeline, pipelineState); err != nil {
-		log.Error(err, "Failed to update pipeline phase")
+		logger.Error(err, "Failed to update pipeline phase")
 		return ctrl.Result{}, err
 	}
 
 	// If pipeline is complete, no need to requeue
 	if pipeline.Status.Phase == pipelinev1.PipelinePhaseSucceeded ||
 		pipeline.Status.Phase == pipelinev1.PipelinePhaseFailed {
-		log.Info("Pipeline completed", "phase", pipeline.Status.Phase)
+		logger.Info("Pipeline completed", "phase", pipeline.Status.Phase)
 		return ctrl.Result{}, nil
+	}
+
+	// If pipeline is suspended, log it but still requeue to detect when resumed
+	if pipeline.Status.Phase == pipelinev1.PipelinePhaseSuspended {
+		logger.Info("Pipeline is suspended, waiting for jobs to be resumed",
+			"suspendedSteps", pipelineState.suspendedSteps)
 	}
 
 	// Try to start pending steps
 	if err := r.startReadySteps(ctx, pipeline); err != nil {
-		log.Error(err, "Failed to start ready steps")
+		logger.Error(err, "Failed to start ready steps")
 		return ctrl.Result{}, err
 	}
 
 	// Requeue to check status again
-	log.V(1).Info("Requeuing pipeline for status check")
+	logger.V(1).Info("Requeuing pipeline for status check")
 	return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 }
 
@@ -130,13 +136,16 @@ type pipelineState struct {
 	anyFailed                 bool
 	anyRunning                bool
 	anyPending                bool
+	anySuspended              bool
+	suspendedSteps            []string
 	hasPendingFailureHandlers bool
 }
 
 // analyzePipelineState analyzes the current state of all steps
 func (r *PipelineReconciler) analyzePipelineState(pipeline *pipelinev1.Pipeline) pipelineState {
 	state := pipelineState{
-		allSucceeded: true,
+		allSucceeded:   true,
+		suspendedSteps: []string{},
 	}
 
 	succeededCount := 0
@@ -144,6 +153,7 @@ func (r *PipelineReconciler) analyzePipelineState(pipeline *pipelinev1.Pipeline)
 	failedCount := 0
 	runningCount := 0
 	pendingCount := 0
+	suspendedCount := 0
 
 	for _, stepStatus := range pipeline.Status.Steps {
 		switch stepStatus.Phase {
@@ -163,6 +173,11 @@ func (r *PipelineReconciler) analyzePipelineState(pipeline *pipelinev1.Pipeline)
 			pendingCount++
 			state.anyPending = true
 			state.allSucceeded = false
+		case pipelinev1.StepPhaseSuspended:
+			suspendedCount++
+			state.anySuspended = true
+			state.suspendedSteps = append(state.suspendedSteps, stepStatus.Name)
+			state.allSucceeded = false
 		}
 	}
 
@@ -176,11 +191,14 @@ func (r *PipelineReconciler) analyzePipelineState(pipeline *pipelinev1.Pipeline)
 
 // updatePipelinePhase updates the pipeline phase based on current state
 func (r *PipelineReconciler) updatePipelinePhase(ctx context.Context, pipeline *pipelinev1.Pipeline, state pipelineState) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	oldPhase := pipeline.Status.Phase
 
 	// Determine new phase
-	if state.anyFailed && !state.anyRunning && !state.hasPendingFailureHandlers {
+	if state.anySuspended && !state.anyRunning {
+		// Pipeline is suspended - a step is waiting to be resumed
+		pipeline.Status.Phase = pipelinev1.PipelinePhaseSuspended
+	} else if state.anyFailed && !state.anyRunning && !state.anySuspended && !state.hasPendingFailureHandlers {
 		// Pipeline failed and no cleanup/failure handlers are pending
 		pipeline.Status.Phase = pipelinev1.PipelinePhaseFailed
 		if pipeline.Status.CompletionTime == nil {
@@ -199,11 +217,11 @@ func (r *PipelineReconciler) updatePipelinePhase(ctx context.Context, pipeline *
 	}
 
 	// Update conditions
-	r.updateConditions(pipeline)
+	r.updateConditions(pipeline, state)
 
 	// Update status if changed
 	if oldPhase != pipeline.Status.Phase {
-		log.Info("Pipeline phase changed", "old", oldPhase, "new", pipeline.Status.Phase)
+		logger.Info("Pipeline phase changed", "old", oldPhase, "new", pipeline.Status.Phase)
 		if err := r.Status().Update(ctx, pipeline); err != nil {
 			return err
 		}
@@ -214,22 +232,22 @@ func (r *PipelineReconciler) updatePipelinePhase(ctx context.Context, pipeline *
 
 // initializeStepStatuses creates initial status entries for all steps
 func (r *PipelineReconciler) initializeStepStatuses(ctx context.Context, pipeline *pipelinev1.Pipeline) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	for _, step := range pipeline.Spec.Steps {
 		pipeline.Status.Steps = append(pipeline.Status.Steps, pipelinev1.StepStatus{
 			Name:  step.Name,
 			Phase: pipelinev1.StepPhasePending,
 		})
-		log.V(1).Info("Initialized step status", "step", step.Name, "phase", "Pending")
+		logger.V(1).Info("Initialized step status", "step", step.Name, "phase", "Pending")
 	}
 
 	if err := r.Status().Update(ctx, pipeline); err != nil {
-		log.Error(err, "Failed to update pipeline status during initialization")
+		logger.Error(err, "Failed to update pipeline status during initialization")
 		return err
 	}
 
-	log.Info("Step statuses initialized", "count", len(pipeline.Status.Steps))
+	logger.Info("Step statuses initialized", "count", len(pipeline.Status.Steps))
 	return nil
 }
 

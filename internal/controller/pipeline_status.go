@@ -34,7 +34,7 @@ import (
 
 // updateStepStatuses fetches and updates the status of all running jobs
 func (r *PipelineReconciler) updateStepStatuses(ctx context.Context, pipeline *pipelinev1.Pipeline) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	changed := false
 	checkedJobs := 0
@@ -54,12 +54,12 @@ func (r *PipelineReconciler) updateStepStatuses(ctx context.Context, pipeline *p
 			Namespace: pipeline.Namespace,
 		}, job); err != nil {
 			if apierrors.IsNotFound(err) {
-				log.Info("Job not found, may have been deleted",
+				logger.Info("Job not found, may have been deleted",
 					"job", stepStatus.JobName,
 					"step", stepStatus.Name)
 				continue
 			}
-			log.Error(err, "Failed to fetch job",
+			logger.Error(err, "Failed to fetch job",
 				"job", stepStatus.JobName,
 				"step", stepStatus.Name)
 			return err
@@ -74,7 +74,7 @@ func (r *PipelineReconciler) updateStepStatuses(ctx context.Context, pipeline *p
 
 		if oldPhase != newPhase {
 			stepStatus.Phase = newPhase
-			log.Info("Step phase changed",
+			logger.Info("Step phase changed",
 				"step", stepStatus.Name,
 				"job", stepStatus.JobName,
 				"oldPhase", oldPhase,
@@ -84,7 +84,7 @@ func (r *PipelineReconciler) updateStepStatuses(ctx context.Context, pipeline *p
 				"failed", job.Status.Failed)
 			changed = true
 		} else {
-			log.V(1).Info("Step status checked",
+			logger.V(1).Info("Step status checked",
 				"step", stepStatus.Name,
 				"phase", stepStatus.Phase,
 				"active", job.Status.Active)
@@ -92,13 +92,13 @@ func (r *PipelineReconciler) updateStepStatuses(ctx context.Context, pipeline *p
 	}
 
 	if changed {
-		log.Info("Updating pipeline status", "changedSteps", true)
+		logger.Info("Updating pipeline status", "changedSteps", true)
 		if err := r.Status().Update(ctx, pipeline); err != nil {
-			log.Error(err, "Failed to update pipeline status")
+			logger.Error(err, "Failed to update pipeline status")
 			return err
 		}
 	} else {
-		log.V(1).Info("No step status changes detected", "checkedJobs", checkedJobs)
+		logger.V(1).Info("No step status changes detected", "checkedJobs", checkedJobs)
 	}
 
 	return nil
@@ -120,6 +120,12 @@ func (r *PipelineReconciler) determineStepPhase(job *batchv1.Job, currentPhase p
 				"message", condition.Message,
 				"failedPods", job.Status.Failed)
 			return pipelinev1.StepPhaseFailed
+		} else if condition.Type == batchv1.JobSuspended && condition.Status == corev1.ConditionTrue {
+			log.Log.Info("Job suspended",
+				"job", job.Name,
+				"reason", condition.Reason,
+				"message", condition.Message)
+			return pipelinev1.StepPhaseSuspended
 		}
 	}
 
@@ -138,7 +144,7 @@ func (r *PipelineReconciler) determineStepPhase(job *batchv1.Job, currentPhase p
 }
 
 // updateConditions updates the pipeline status conditions based on current phase
-func (r *PipelineReconciler) updateConditions(pipeline *pipelinev1.Pipeline) {
+func (r *PipelineReconciler) updateConditions(pipeline *pipelinev1.Pipeline, state pipelineState) {
 	now := metav1.Now()
 
 	var condition metav1.Condition
@@ -171,6 +177,20 @@ func (r *PipelineReconciler) updateConditions(pipeline *pipelinev1.Pipeline) {
 			Status:             metav1.ConditionFalse,
 			Reason:             "Running",
 			Message:            fmt.Sprintf("Pipeline is running (%d/%d steps completed, %d running)", completedCount, len(pipeline.Status.Steps), runningCount),
+			LastTransitionTime: now,
+		}
+
+	case pipelinev1.PipelinePhaseSuspended:
+		message := "Pipeline is suspended"
+		if len(state.suspendedSteps) > 0 {
+			message = fmt.Sprintf("Pipeline is suspended (suspended steps: %v)", state.suspendedSteps)
+		}
+
+		condition = metav1.Condition{
+			Type:               "Ready",
+			Status:             metav1.ConditionFalse,
+			Reason:             "Suspended",
+			Message:            message,
 			LastTransitionTime: now,
 		}
 

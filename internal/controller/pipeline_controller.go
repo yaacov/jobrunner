@@ -52,7 +52,7 @@ type PipelineReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *PipelineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	// Fetch the Pipeline instance
 	pipeline := &pipelinev1.Pipeline{}
@@ -61,12 +61,12 @@ func (r *PipelineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			// Pipeline was deleted
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "unable to fetch Pipeline")
+		logger.Error(err, "unable to fetch Pipeline")
 		return ctrl.Result{}, err
 	}
 
 	// Handle deletion
-	if !pipeline.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !pipeline.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, pipeline)
 	}
 
@@ -91,7 +91,7 @@ func (r *PipelineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// Skip reconciliation for completed pipelines
 	if pipeline.Status.Phase == pipelinev1.PipelinePhaseSucceeded ||
 		pipeline.Status.Phase == pipelinev1.PipelinePhaseFailed {
-		log.V(1).Info("Pipeline already completed, skipping reconciliation", "phase", pipeline.Status.Phase)
+		logger.V(1).Info("Pipeline already completed, skipping reconciliation", "phase", pipeline.Status.Phase)
 		return ctrl.Result{}, nil
 	}
 

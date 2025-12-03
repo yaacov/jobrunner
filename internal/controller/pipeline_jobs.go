@@ -31,7 +31,7 @@ import (
 
 // startReadySteps attempts to start all steps that are ready to run
 func (r *PipelineReconciler) startReadySteps(ctx context.Context, pipeline *pipelinev1.Pipeline) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
 	for i := range pipeline.Spec.Steps {
 		step := &pipeline.Spec.Steps[i]
@@ -44,7 +44,7 @@ func (r *PipelineReconciler) startReadySteps(ctx context.Context, pipeline *pipe
 
 		// Check if this step should be skipped based on conditions
 		if r.shouldSkipStep(pipeline, step) {
-			log.Info("Skipping step due to unmet conditions", "step", step.Name)
+			logger.Info("Skipping step due to unmet conditions", "step", step.Name)
 			stepStatus.Phase = pipelinev1.StepPhaseSkipped
 			if err := r.Status().Update(ctx, pipeline); err != nil {
 				return err
@@ -55,7 +55,7 @@ func (r *PipelineReconciler) startReadySteps(ctx context.Context, pipeline *pipe
 		// Check if dependencies are satisfied
 		ready, shouldSkip := r.areDependenciesSatisfied(pipeline, step)
 		if shouldSkip {
-			log.Info("Skipping step due to dependency conditions", "step", step.Name)
+			logger.Info("Skipping step due to dependency conditions", "step", step.Name)
 			stepStatus.Phase = pipelinev1.StepPhaseSkipped
 			if err := r.Status().Update(ctx, pipeline); err != nil {
 				return err
@@ -68,11 +68,11 @@ func (r *PipelineReconciler) startReadySteps(ctx context.Context, pipeline *pipe
 
 		// Create the job for this step
 		if err := r.createJobForStep(ctx, pipeline, step, stepStatus); err != nil {
-			log.Error(err, "unable to create job for step", "step", step.Name)
+			logger.Error(err, "unable to create job for step", "step", step.Name)
 			return err
 		}
 
-		log.Info("Started step", "step", step.Name, "job", stepStatus.JobName)
+		logger.Info("Started step", "step", step.Name, "job", stepStatus.JobName)
 
 		// Update status to Running
 		stepStatus.Phase = pipelinev1.StepPhaseRunning
@@ -86,11 +86,11 @@ func (r *PipelineReconciler) startReadySteps(ctx context.Context, pipeline *pipe
 
 // createJobForStep creates a Kubernetes Job for a pipeline step
 func (r *PipelineReconciler) createJobForStep(ctx context.Context, pipeline *pipelinev1.Pipeline, step *pipelinev1.PipelineStep, stepStatus *pipelinev1.StepStatus) error {
-	log := log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 	jobName := fmt.Sprintf("%s-%s", pipeline.Name, step.Name)
 	stepStatus.JobName = jobName
 
-	log.Info("Creating job for step",
+	logger.Info("Creating job for step",
 		"step", step.Name,
 		"job", jobName,
 		"pipeline", pipeline.Name)
@@ -111,18 +111,18 @@ func (r *PipelineReconciler) createJobForStep(ctx context.Context, pipeline *pip
 	if job.Spec.BackoffLimit == nil {
 		backoffLimit := int32(0)
 		job.Spec.BackoffLimit = &backoffLimit
-		log.V(1).Info("Setting default backoffLimit to 0 for pipeline step", "step", step.Name)
+		logger.V(1).Info("Setting default backoffLimit to 0 for pipeline step", "step", step.Name)
 	}
 
 	// Apply pod template defaults
 	if pipeline.Spec.PodTemplate != nil {
-		log.V(1).Info("Applying pod template defaults", "step", step.Name)
+		logger.V(1).Info("Applying pod template defaults", "step", step.Name)
 	}
 	r.applyPodTemplateDefaults(pipeline, job)
 
 	// Apply shared volume if configured
 	if pipeline.Spec.SharedVolume != nil {
-		log.V(1).Info("Applying shared volume configuration",
+		logger.V(1).Info("Applying shared volume configuration",
 			"step", step.Name,
 			"volume", pipeline.Spec.SharedVolume.GetName(),
 			"mountPath", pipeline.Spec.SharedVolume.GetMountPath())
@@ -131,17 +131,17 @@ func (r *PipelineReconciler) createJobForStep(ctx context.Context, pipeline *pip
 
 	// Set controller reference
 	if err := controllerutil.SetControllerReference(pipeline, job, r.Scheme); err != nil {
-		log.Error(err, "Failed to set controller reference", "job", jobName)
+		logger.Error(err, "Failed to set controller reference", "job", jobName)
 		return err
 	}
 
 	// Create the job
 	if err := r.Create(ctx, job); err != nil {
-		log.Error(err, "Failed to create job", "job", jobName, "step", step.Name)
+		logger.Error(err, "Failed to create job", "job", jobName, "step", step.Name)
 		return err
 	}
 
-	log.Info("Job created successfully",
+	logger.Info("Job created successfully",
 		"job", jobName,
 		"step", step.Name,
 		"namespace", pipeline.Namespace)
@@ -151,12 +151,22 @@ func (r *PipelineReconciler) createJobForStep(ctx context.Context, pipeline *pip
 // applyPodTemplateDefaults applies pipeline-level pod template defaults to a job
 func (r *PipelineReconciler) applyPodTemplateDefaults(pipeline *pipelinev1.Pipeline, job *batchv1.Job) {
 	if pipeline.Spec.PodTemplate == nil {
+		// Still apply service account even without pod template
+		r.applyServiceAccountName(pipeline, &job.Spec.Template.Spec)
 		return
 	}
 
 	podTemplate := pipeline.Spec.PodTemplate
 	podSpec := &job.Spec.Template.Spec
 
+	r.applyPodSpecDefaults(podTemplate, podSpec)
+	r.applyPodMetadataDefaults(podTemplate, job)
+	r.applyContainerDefaults(podTemplate, podSpec)
+	r.applyServiceAccountName(pipeline, podSpec)
+}
+
+// applyPodSpecDefaults applies pod-level scheduling and configuration defaults
+func (r *PipelineReconciler) applyPodSpecDefaults(podTemplate *pipelinev1.PodTemplateDefaults, podSpec *corev1.PodSpec) {
 	// Apply node selector
 	if len(podTemplate.NodeSelector) > 0 {
 		if podSpec.NodeSelector == nil {
@@ -203,7 +213,10 @@ func (r *PipelineReconciler) applyPodTemplateDefaults(pipeline *pipelinev1.Pipel
 	if podTemplate.SchedulerName != "" && podSpec.SchedulerName == "" {
 		podSpec.SchedulerName = podTemplate.SchedulerName
 	}
+}
 
+// applyPodMetadataDefaults applies labels and annotations to the pod template
+func (r *PipelineReconciler) applyPodMetadataDefaults(podTemplate *pipelinev1.PodTemplateDefaults, job *batchv1.Job) {
 	// Apply labels to pod template
 	if len(podTemplate.Labels) > 0 {
 		if job.Spec.Template.Labels == nil {
@@ -227,7 +240,10 @@ func (r *PipelineReconciler) applyPodTemplateDefaults(pipeline *pipelinev1.Pipel
 			}
 		}
 	}
+}
 
+// applyContainerDefaults applies defaults to all containers in the pod spec
+func (r *PipelineReconciler) applyContainerDefaults(podTemplate *pipelinev1.PodTemplateDefaults, podSpec *corev1.PodSpec) {
 	// Apply environment variables to all containers
 	if len(podTemplate.Env) > 0 || len(podTemplate.EnvFrom) > 0 {
 		for i := range podSpec.Containers {
@@ -253,8 +269,10 @@ func (r *PipelineReconciler) applyPodTemplateDefaults(pipeline *pipelinev1.Pipel
 			}
 		}
 	}
+}
 
-	// Apply service account name
+// applyServiceAccountName applies the service account name from the pipeline spec
+func (r *PipelineReconciler) applyServiceAccountName(pipeline *pipelinev1.Pipeline, podSpec *corev1.PodSpec) {
 	if pipeline.Spec.ServiceAccountName != "" && podSpec.ServiceAccountName == "" {
 		podSpec.ServiceAccountName = pipeline.Spec.ServiceAccountName
 	}
