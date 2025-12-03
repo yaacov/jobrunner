@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobRunner - Pipeline Builder & Monitor</title>
+  <link rel="icon" type="image/svg+xml" href="/jobrunner-logo.svg">
+  
+  <!-- Red Hat fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- RHDS Light DOM styles for components that need them -->
+  <link rel="stylesheet" href="/node_modules/@rhds/elements/elements/rh-breadcrumb/rh-breadcrumb-lightdom.css">
+  <link rel="stylesheet" href="/node_modules/@rhds/elements/elements/rh-navigation-primary/rh-navigation-primary-lightdom.css">
+  <link rel="stylesheet" href="/node_modules/@rhds/elements/elements/rh-navigation-vertical/rh-navigation-vertical-lightdom.css">
+  <link rel="stylesheet" href="/node_modules/@rhds/elements/elements/rh-table/rh-table-lightdom.css">
+  
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* RHDS-inspired tokens */
+      --rh-color-brand-red: #ee0000;
+      --rh-color-brand-red-dark: #a60000;
+      --rh-color-surface-lightest: #ffffff;
+      --rh-color-surface-lighter: #f5f5f5;
+      --rh-color-surface-light: #e0e0e0;
+      --rh-color-text-primary: #151515;
+      --rh-color-text-secondary: #6a6e73;
+      --rh-color-border-subtle: #d2d2d2;
+      --rh-color-green-50: #3e8635;
+      --rh-color-red-50: #c9190b;
+      --rh-color-teal-50: #009596;
+      --rh-color-yellow-50: #f0ab00;
+      --rh-color-gray-30: #d2d2d2;
+      --rh-color-gray-40: #8a8d90;
+      
+      --rh-space-xs: 4px;
+      --rh-space-sm: 8px;
+      --rh-space-md: 16px;
+      --rh-space-lg: 24px;
+      --rh-space-xl: 32px;
+      --rh-space-2xl: 48px;
+      
+      --rh-font-family-heading: 'Red Hat Display', sans-serif;
+      --rh-font-family-body: 'Red Hat Text', sans-serif;
+      --rh-font-family-code: 'Red Hat Mono', monospace;
+      
+      --rh-font-size-heading-lg: 1.75rem;
+      --rh-font-size-heading-md: 1.5rem;
+      --rh-font-size-heading-sm: 1.25rem;
+      --rh-font-size-heading-xs: 1.125rem;
+      --rh-font-size-body-lg: 1.125rem;
+      --rh-font-size-body-md: 1rem;
+      --rh-font-size-body-sm: 0.875rem;
+      --rh-font-size-body-xs: 0.75rem;
+      
+      --rh-border-radius-default: 3px;
+      --rh-border-radius-pill: 64px;
+      
+      --rh-box-shadow-sm: 0 1px 2px 0 rgba(21, 21, 21, 0.08);
+      --rh-box-shadow-md: 0 4px 6px -1px rgba(21, 21, 21, 0.1);
+      --rh-box-shadow-lg: 0 10px 15px -3px rgba(21, 21, 21, 0.1);
+    }
+
+    html, body {
+      font-family: var(--rh-font-family-body);
+      background: var(--rh-color-surface-lightest);
+      color: var(--rh-color-text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* Loading state */
+    .app-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      gap: 1rem;
+      color: var(--rh-color-text-secondary);
+    }
+
+    .app-loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--rh-color-gray-30);
+      border-top-color: var(--rh-color-brand-red);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Ensure RHDS components render correctly */
+    rh-card {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app-loading">
+    <div class="app-loading-spinner"></div>
+    <span>Loading JobRunner...</span>
+  </div>
+  
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,11 @@
+[install]
+# Use faster installation
+concurrent = true
+
+[bundle]
+# Bundle settings
+entrypoints = ["./src/main.ts"]
+outdir = "./dist"
+minify = true
+sourcemap = "external"
+
