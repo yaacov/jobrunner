@@ -14,6 +14,7 @@ Kubernetes has a Job resource for running single workloads to completion, but no
 - **Conditional Execution**: Control when steps run based on success or failure of other steps ([docs](docs/conditional-execution.md))
 - **Shared Volumes**: Share data between steps with automatic directory setup ([docs](docs/shared-volumes.md))
 - **Shared Configuration**: Define image, env vars, resources once - apply to all steps ([docs](docs/pod-templates.md))
+- **Job Controls**: Per-step retry limits, timeouts, auto-cleanup, and suspend/resume ([docs](docs/job-controls.md))
 - **In-cluster credentials**: Service account tokens and environment variables pre-configured ([docs](docs/using-kubectl.md))
 - **Status Tracking**: Monitor pipeline and individual step progress
 
@@ -103,6 +104,7 @@ For more detailed information, see the following guides:
 - [Conditional Execution](docs/conditional-execution.md) - Control step execution based on conditions
 - [Shared Volumes](docs/shared-volumes.md) - Share data between pipeline steps
 - [Pod Templates](docs/pod-templates.md) - Define shared configuration for all steps
+- [Job Controls](docs/job-controls.md) - Retry limits, timeouts, auto-cleanup, and suspend
 - [Using kubectl](docs/using-kubectl.md) - Run kubectl commands in your pipeline steps
 
 ## License
