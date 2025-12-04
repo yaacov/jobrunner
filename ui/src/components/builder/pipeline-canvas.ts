@@ -5,6 +5,7 @@
 
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
+import { stringify as yamlStringify, parse as yamlParse } from 'yaml';
 import type { Pipeline, PipelineStep } from '../../types/pipeline.js';
 import { k8sClient } from '../../lib/k8s-client.js';
 import { navigate } from '../../lib/router.js';
@@ -13,6 +14,8 @@ import {
   createDefaultStep,
   validateStepName,
 } from '../../lib/graph-layout.js';
+
+type ViewMode = 'builder' | 'yaml';
 
 interface CanvasStep extends PipelineStep {
   x: number;
@@ -31,6 +34,9 @@ export class PipelineCanvas extends LitElement {
   @state() private draggedStepIndex: number | null = null;
   @state() private existingPipelineNames: Set<string> = new Set();
   @state() private nameError: string | null = null;
+  @state() private viewMode: ViewMode = 'builder';
+  @state() private yamlContent = '';
+  @state() private yamlError: string | null = null;
 
   static styles = css`
     :host {
@@ -121,6 +127,51 @@ export class PipelineCanvas extends LitElement {
     .header-actions {
       display: flex;
       gap: var(--rh-space-sm, 8px);
+      align-items: center;
+    }
+
+    .view-switch {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
+      margin-inline-start: var(--rh-space-lg, 24px);
+    }
+
+    .view-switch-label {
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      color: var(--rh-color-text-secondary-on-light, #6a6e73);
+    }
+
+    .yaml-editor-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--rh-color-surface-lightest, #ffffff);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      overflow: hidden;
+    }
+
+    .yaml-editor-container code-editor {
+      flex: 1;
+      min-height: 500px;
+    }
+
+    .yaml-error-banner {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      background: var(--rh-color-orange-100, #fef3e2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-orange-500, #f4b740);
+      color: var(--rh-color-orange-700, #8a5b00);
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+    }
+
+    .yaml-error-banner rh-icon {
+      --rh-icon-size: 16px;
+      flex-shrink: 0;
     }
 
     .workspace {
@@ -618,16 +669,111 @@ export class PipelineCanvas extends LitElement {
     e.dataTransfer?.setData('template-type', type);
   }
 
+  private pipelineToYaml(): string {
+    // Update pipeline steps from canvas before converting
+    this.updatePipelineFromCanvas();
+
+    return yamlStringify(this.pipeline, {
+      indent: 2,
+      lineWidth: 0,
+      defaultKeyType: 'PLAIN',
+      defaultStringType: 'QUOTE_DOUBLE',
+    });
+  }
+
+  private yamlToPipeline(yamlStr: string): Pipeline | null {
+    try {
+      const parsed = yamlParse(yamlStr) as Pipeline;
+
+      // Validate basic structure
+      if (!parsed || typeof parsed !== 'object') {
+        throw new Error('Invalid YAML: must be an object');
+      }
+
+      // Ensure required fields
+      if (!parsed.apiVersion) {
+        parsed.apiVersion = 'pipeline.yaacov.io/v1';
+      }
+      if (!parsed.kind) {
+        parsed.kind = 'Pipeline';
+      }
+      if (!parsed.metadata) {
+        parsed.metadata = { name: 'new-pipeline' };
+      }
+      if (!parsed.spec) {
+        parsed.spec = { steps: [] };
+      }
+      if (!parsed.spec.steps) {
+        parsed.spec.steps = [];
+      }
+
+      this.yamlError = null;
+      return parsed;
+    } catch (e) {
+      this.yamlError = e instanceof Error ? e.message : 'Invalid YAML';
+      return null;
+    }
+  }
+
+  private switchToYamlView() {
+    // Sync current builder state to YAML
+    this.yamlContent = this.pipelineToYaml();
+    this.yamlError = null;
+    this.viewMode = 'yaml';
+    // Close any open drawers
+    this.showStepEditor = false;
+    this.showGlobalSettings = false;
+  }
+
+  private switchToBuilderView() {
+    // Try to parse YAML and update builder state
+    const parsed = this.yamlToPipeline(this.yamlContent);
+
+    if (parsed) {
+      this.pipeline = parsed;
+      // Rebuild canvas steps from pipeline
+      this.canvasSteps = (parsed.spec.steps || []).map((step, index) => ({
+        ...step,
+        x: 0,
+        y: index * 120,
+      }));
+      this.viewMode = 'builder';
+    }
+    // If parsing fails, yamlError is set and user stays in YAML view
+  }
+
+  private handleYamlChange(e: CustomEvent) {
+    this.yamlContent = e.detail.value;
+    // Try to parse to validate and clear/set error
+    this.yamlToPipeline(this.yamlContent);
+  }
+
   private async savePipeline() {
+    let pipelineToSave: Pipeline;
+
+    // If in YAML mode, parse YAML as source of truth
+    if (this.viewMode === 'yaml') {
+      const parsed = this.yamlToPipeline(this.yamlContent);
+      if (!parsed) {
+        this.error = `Cannot save: ${this.yamlError}`;
+        return;
+      }
+      pipelineToSave = parsed;
+    } else {
+      // In builder mode, use the current pipeline state
+      this.updatePipelineFromCanvas();
+      pipelineToSave = this.pipeline;
+    }
+
     // Validate name
-    const nameValidationError = this.validatePipelineName(this.pipeline.metadata.name);
+    const nameValidationError = this.validatePipelineName(pipelineToSave.metadata.name);
     if (nameValidationError) {
       this.nameError = nameValidationError;
       this.error = `Pipeline name: ${nameValidationError}`;
       return;
     }
 
-    if (this.canvasSteps.length === 0) {
+    if (!pipelineToSave.spec.steps || pipelineToSave.spec.steps.length === 0) {
       this.error = 'Pipeline must have at least one step';
       return;
     }
@@ -636,9 +782,9 @@ export class PipelineCanvas extends LitElement {
     this.error = null;
 
     try {
-      const namespace = this.pipeline.metadata.namespace || 'default';
-      await k8sClient.createPipeline(namespace, this.pipeline);
-      navigate(`/monitor/${namespace}/${this.pipeline.metadata.name}`);
+      const namespace = pipelineToSave.metadata.namespace || 'default';
+      await k8sClient.createPipeline(namespace, pipelineToSave);
+      navigate(`/monitor/${namespace}/${pipelineToSave.metadata.name}`);
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to save pipeline';
     } finally {
@@ -683,28 +829,68 @@ export class PipelineCanvas extends LitElement {
                 `
               : ''}
           </div>
+          <div class="view-switch">
+            <rh-switch
+              ?checked=${this.viewMode === 'yaml'}
+              @change=${(e: Event) => {
+                const checked = (e.target as HTMLInputElement).checked;
+                if (checked) {
+                  this.switchToYamlView();
+                } else {
+                  this.switchToBuilderView();
+                }
+              }}
+              aria-label="Toggle between Builder and YAML view"
+            ></rh-switch>
+            <span class="view-switch-label">YAML</span>
+          </div>
         </div>
         <div class="header-actions">
-          <rh-button
-            variant="secondary"
-            @click=${() => {
-              this.showGlobalSettings = true;
-              this.showStepEditor = false;
-            }}
-          >
-            <rh-icon set="ui" icon="configure" slot="icon"></rh-icon>
-            Settings
-          </rh-button>
-          <rh-button ?disabled=${this.saving} @click=${this.savePipeline}>
+          ${this.viewMode === 'builder'
+            ? html`
+                <rh-button
+                  variant="secondary"
+                  @click=${() => {
+                    this.showGlobalSettings = true;
+                    this.showStepEditor = false;
+                  }}
+                >
+                  <rh-icon set="ui" icon="configure" slot="icon"></rh-icon>
+                  Settings
+                </rh-button>
+              `
+            : ''}
+          <rh-button ?disabled=${this.saving || (this.viewMode === 'yaml' && !!this.yamlError)} @click=${this.savePipeline}>
             <rh-icon set="ui" icon="save" slot="icon"></rh-icon>
             ${this.saving ? 'Saving...' : 'Save Pipeline'}
           </rh-button>
         </div>
       </header>
 
-      <div class="workspace">
-        <!-- Left sidebar - Step templates -->
-        <aside class="sidebar">
+      ${this.viewMode === 'yaml'
+        ? html`
+            <div class="yaml-editor-container">
+              ${this.yamlError
+                ? html`
+                    <div class="yaml-error-banner">
+                      <rh-icon set="ui" icon="warning"></rh-icon>
+                      <span>${this.yamlError}</span>
+                    </div>
+                  `
+                : ''}
+              <code-editor
+                .value=${this.yamlContent}
+                language="yaml"
+                .showLanguageSelector=${false}
+                minHeight="600px"
+                @change=${this.handleYamlChange}
+              ></code-editor>
+            </div>
+          `
+        : html`
+            <div class="workspace">
+              <!-- Left sidebar - Step templates -->
+              <aside class="sidebar">
           <h3>Add Step</h3>
           <div class="step-templates">
             <div
@@ -880,6 +1066,7 @@ export class PipelineCanvas extends LitElement {
               `}
         </div>
       </div>
+          `}
 
       <!-- Side Drawer for Global Settings -->
       <side-drawer
