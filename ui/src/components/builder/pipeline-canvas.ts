@@ -366,7 +366,72 @@ export class PipelineCanvas extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.loadExistingPipelines();
+    this.loadPipelineData();
+  }
+
+  private async loadPipelineData() {
+    // Check if there's a copied pipeline in sessionStorage
+    const copiedPipelineJson = sessionStorage.getItem('pipeline-copy');
+    if (copiedPipelineJson) {
+      sessionStorage.removeItem('pipeline-copy');
+      try {
+        const copiedPipeline = JSON.parse(copiedPipelineJson) as Pipeline;
+        await this.loadFromCopiedPipeline(copiedPipeline);
+        return;
+      } catch (e) {
+        console.warn('Failed to parse copied pipeline:', e);
+      }
+    }
+
+    // Otherwise, initialize a new pipeline
+    await this.loadExistingPipelines();
+  }
+
+  private async loadFromCopiedPipeline(copiedPipeline: Pipeline) {
+    try {
+      const namespace = copiedPipeline.metadata.namespace || 'default';
+      const pipelines = await k8sClient.listPipelines(namespace);
+      this.existingPipelineNames = new Set(pipelines.map(p => p.metadata.name));
+
+      // Generate a unique name based on the copied pipeline name
+      const baseName = copiedPipeline.metadata.name;
+      let uniqueName = baseName;
+      let counter = 1;
+
+      while (this.existingPipelineNames.has(uniqueName)) {
+        counter++;
+        uniqueName = `${baseName.replace(/-copy(-\d+)?$/, '')}-copy-${counter}`;
+      }
+
+      // Set the pipeline with the unique name
+      this.pipeline = {
+        ...copiedPipeline,
+        metadata: {
+          ...copiedPipeline.metadata,
+          name: uniqueName,
+        },
+      };
+
+      // Load steps into the canvas
+      if (copiedPipeline.spec.steps && copiedPipeline.spec.steps.length > 0) {
+        this.canvasSteps = copiedPipeline.spec.steps.map((step, index) => ({
+          ...step,
+          x: 0,
+          y: index * 120,
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to load pipeline names:', e);
+      // Still load the copied pipeline even if we can't check names
+      this.pipeline = copiedPipeline;
+      if (copiedPipeline.spec.steps && copiedPipeline.spec.steps.length > 0) {
+        this.canvasSteps = copiedPipeline.spec.steps.map((step, index) => ({
+          ...step,
+          x: 0,
+          y: index * 120,
+        }));
+      }
+    }
   }
 
   private async loadExistingPipelines() {

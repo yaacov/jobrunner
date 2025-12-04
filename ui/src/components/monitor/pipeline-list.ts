@@ -515,6 +515,34 @@ export class PipelineList extends LitElement {
     }
   }
 
+  private copyPipeline(e: Event, pipeline: Pipeline) {
+    e.stopPropagation();
+    this.closeMenu();
+
+    // Create a deep copy of the pipeline, removing K8s metadata
+    const copiedPipeline: Pipeline = {
+      apiVersion: pipeline.apiVersion,
+      kind: pipeline.kind,
+      metadata: {
+        name: `${pipeline.metadata.name}-copy`,
+        namespace: pipeline.metadata.namespace,
+        labels: pipeline.metadata.labels ? { ...pipeline.metadata.labels } : undefined,
+        annotations: pipeline.metadata.annotations
+          ? { ...pipeline.metadata.annotations }
+          : undefined,
+        // Explicitly exclude uid, resourceVersion, creationTimestamp
+      },
+      spec: JSON.parse(JSON.stringify(pipeline.spec)), // Deep copy the spec
+      // Exclude status - we're creating a new pipeline
+    };
+
+    // Store in sessionStorage for the builder to pick up
+    sessionStorage.setItem('pipeline-copy', JSON.stringify(copiedPipeline));
+
+    // Navigate to builder
+    navigate('/builder');
+  }
+
   render() {
     if (this.loading) {
       return html`
@@ -701,6 +729,14 @@ export class PipelineList extends LitElement {
           ${this.openMenuId === pipeline.metadata.name
             ? html`
                 <div class="kebab-menu" role="menu">
+                  <button
+                    class="kebab-menu-item"
+                    role="menuitem"
+                    @click=${(e: Event) => this.copyPipeline(e, pipeline)}
+                  >
+                    <rh-icon set="ui" icon="copy"></rh-icon>
+                    Copy
+                  </button>
                   <button
                     class="kebab-menu-item danger"
                     role="menuitem"
