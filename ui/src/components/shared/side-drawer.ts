@@ -22,7 +22,9 @@ export class SideDrawer extends LitElement {
       background: rgba(0, 0, 0, 0.5);
       opacity: 0;
       visibility: hidden;
-      transition: opacity 200ms ease, visibility 200ms ease;
+      transition:
+        opacity 200ms ease,
+        visibility 200ms ease;
       z-index: 200;
     }
 
@@ -39,7 +41,8 @@ export class SideDrawer extends LitElement {
       width: 400px;
       max-width: 100vw;
       background: var(--rh-color-surface-lightest, #ffffff);
-      border-inline-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-inline-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
       box-shadow: var(--rh-box-shadow-lg, -4px 0 15px rgba(0, 0, 0, 0.15));
       transform: translateX(100%);
       transition: transform 250ms ease;
@@ -73,7 +76,9 @@ export class SideDrawer extends LitElement {
       cursor: pointer;
       border-radius: var(--rh-border-radius-default, 3px);
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .close-btn:hover {
@@ -152,11 +157,7 @@ export class SideDrawer extends LitElement {
       <div class="overlay" @click=${this.handleOverlayClick}></div>
       <aside class="drawer" role="dialog" aria-modal="true" aria-label=${this.heading}>
         <header class="drawer-header">
-          <button
-            class="close-btn"
-            @click=${this.handleClose}
-            aria-label="Close drawer"
-          >
+          <button class="close-btn" @click=${this.handleClose} aria-label="Close drawer">
             <rh-icon set="ui" icon="close"></rh-icon>
           </button>
           <h2 class="drawer-title">${this.heading}</h2>
@@ -174,4 +175,3 @@ declare global {
     'side-drawer': SideDrawer;
   }
 }
-

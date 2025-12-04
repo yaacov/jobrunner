@@ -9,7 +9,12 @@ import { k8sClient } from '../../lib/k8s-client.js';
 
 interface PVC {
   metadata: { name: string; namespace: string; creationTimestamp?: string };
-  spec: { accessModes?: string[]; storageClassName?: string; volumeMode?: string; resources?: { requests?: { storage?: string } } };
+  spec: {
+    accessModes?: string[];
+    storageClassName?: string;
+    volumeMode?: string;
+    resources?: { requests?: { storage?: string } };
+  };
   status: { phase: string };
 }
 
@@ -82,7 +87,8 @@ export class PVCList extends LitElement {
     .pvc-table td {
       padding: var(--rh-space-md, 16px);
       text-align: start;
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .pvc-table th {
@@ -186,7 +192,9 @@ export class PVCList extends LitElement {
       border-radius: var(--rh-border-radius-default, 3px);
       cursor: pointer;
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .delete-btn:hover {
@@ -232,7 +240,8 @@ export class PVCList extends LitElement {
       justify-content: space-between;
       align-items: center;
       padding: var(--rh-space-lg, 24px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .modal-header h2 {
@@ -324,7 +333,8 @@ export class PVCList extends LitElement {
       justify-content: flex-end;
       gap: var(--rh-space-sm, 8px);
       padding: var(--rh-space-lg, 24px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .form-error {
@@ -366,10 +376,7 @@ export class PVCList extends LitElement {
   }
 
   private async loadData() {
-    await Promise.all([
-      this.loadPVCs(),
-      this.loadStorageClasses(),
-    ]);
+    await Promise.all([this.loadPVCs(), this.loadStorageClasses()]);
   }
 
   private async loadPVCs() {
@@ -408,10 +415,14 @@ export class PVCList extends LitElement {
 
   private getPhaseColor(phase: string): string {
     switch (phase) {
-      case 'Bound': return 'green';
-      case 'Pending': return 'orange';
-      case 'Lost': return 'red';
-      default: return 'gray';
+      case 'Bound':
+        return 'green';
+      case 'Pending':
+        return 'orange';
+      case 'Lost':
+        return 'red';
+      default:
+        return 'gray';
     }
   }
 
@@ -441,7 +452,8 @@ export class PVCList extends LitElement {
     // Validate name (DNS subdomain name)
     const nameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
     if (!nameRegex.test(this.newPvcName)) {
-      this.createError = 'Name must consist of lowercase alphanumeric characters or "-", and must start and end with an alphanumeric character';
+      this.createError =
+        'Name must consist of lowercase alphanumeric characters or "-", and must start and end with an alphanumeric character';
       return;
     }
 
@@ -470,10 +482,7 @@ export class PVCList extends LitElement {
     if (!confirmed) return;
 
     try {
-      await k8sClient.deletePVC(
-        pvc.metadata.namespace || this.namespace,
-        pvc.metadata.name
-      );
+      await k8sClient.deletePVC(pvc.metadata.namespace || this.namespace, pvc.metadata.name);
       await this.loadPVCs();
     } catch (err) {
       alert(`Failed to delete PVC: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -517,37 +526,45 @@ export class PVCList extends LitElement {
         </div>
       </div>
 
-      ${this.pvcs.length === 0 ? html`
-        <div class="empty-state">
-          <rh-icon set="standard" icon="data-science"></rh-icon>
-          <h3>No PVCs found</h3>
-          <p>Create a persistent volume claim to store data.</p>
-          <rh-cta>
-            <a href="#" @click=${(e: Event) => { e.preventDefault(); this.openCreateModal(); }}>Create PVC</a>
-          </rh-cta>
-        </div>
-      ` : html`
-        <div class="pvc-table-container">
-          <table class="pvc-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Size</th>
-                <th>Access Mode</th>
-                <th>Volume Mode</th>
-                <th>Storage Class</th>
-                <th>Created</th>
-                <th class="actions-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.pvcs.map(pvc => this.renderPVCRow(pvc))}
-            </tbody>
-          </table>
-        </div>
-      `}
-
+      ${this.pvcs.length === 0
+        ? html`
+            <div class="empty-state">
+              <rh-icon set="standard" icon="data-science"></rh-icon>
+              <h3>No PVCs found</h3>
+              <p>Create a persistent volume claim to store data.</p>
+              <rh-cta>
+                <a
+                  href="#"
+                  @click=${(e: Event) => {
+                    e.preventDefault();
+                    this.openCreateModal();
+                  }}
+                  >Create PVC</a
+                >
+              </rh-cta>
+            </div>
+          `
+        : html`
+            <div class="pvc-table-container">
+              <table class="pvc-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Size</th>
+                    <th>Access Mode</th>
+                    <th>Volume Mode</th>
+                    <th>Storage Class</th>
+                    <th>Created</th>
+                    <th class="actions-cell">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.pvcs.map(pvc => this.renderPVCRow(pvc))}
+                </tbody>
+              </table>
+            </div>
+          `}
       ${this.showCreateModal ? this.renderCreateModal() : ''}
     `;
   }
@@ -572,7 +589,7 @@ export class PVCList extends LitElement {
         <td>${pvc.spec.storageClassName || '(default)'}</td>
         <td>
           <span class="created-time">
-            ${pvc.metadata.creationTimestamp 
+            ${pvc.metadata.creationTimestamp
               ? this.formatTime(pvc.metadata.creationTimestamp)
               : '-'}
           </span>
@@ -593,9 +610,12 @@ export class PVCList extends LitElement {
 
   private renderCreateModal() {
     return html`
-      <div class="modal-overlay" @click=${(e: Event) => {
-        if (e.target === e.currentTarget) this.closeCreateModal();
-      }}>
+      <div
+        class="modal-overlay"
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this.closeCreateModal();
+        }}
+      >
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
           <div class="modal-header">
             <h2 id="modal-title">Create Persistent Volume Claim</h2>
@@ -604,9 +624,7 @@ export class PVCList extends LitElement {
             </button>
           </div>
           <div class="modal-body">
-            ${this.createError ? html`
-              <div class="form-error">${this.createError}</div>
-            ` : ''}
+            ${this.createError ? html` <div class="form-error">${this.createError}</div> ` : ''}
 
             <div class="form-group">
               <label for="pvc-name">Name *</label>
@@ -614,7 +632,7 @@ export class PVCList extends LitElement {
                 type="text"
                 id="pvc-name"
                 .value=${this.newPvcName}
-                @input=${(e: Event) => this.newPvcName = (e.target as HTMLInputElement).value}
+                @input=${(e: Event) => (this.newPvcName = (e.target as HTMLInputElement).value)}
                 placeholder="my-pvc"
               />
             </div>
@@ -627,12 +645,13 @@ export class PVCList extends LitElement {
                   id="pvc-size"
                   min="1"
                   .value=${this.newPvcSize}
-                  @input=${(e: Event) => this.newPvcSize = (e.target as HTMLInputElement).value}
+                  @input=${(e: Event) => (this.newPvcSize = (e.target as HTMLInputElement).value)}
                 />
                 <select
                   id="pvc-size-unit"
                   .value=${this.newPvcSizeUnit}
-                  @change=${(e: Event) => this.newPvcSizeUnit = (e.target as HTMLSelectElement).value}
+                  @change=${(e: Event) =>
+                    (this.newPvcSizeUnit = (e.target as HTMLSelectElement).value)}
                 >
                   <option value="Mi">Mi</option>
                   <option value="Gi" selected>Gi</option>
@@ -646,7 +665,8 @@ export class PVCList extends LitElement {
               <select
                 id="pvc-volume-mode"
                 .value=${this.newPvcVolumeMode}
-                @change=${(e: Event) => this.newPvcVolumeMode = (e.target as HTMLSelectElement).value}
+                @change=${(e: Event) =>
+                  (this.newPvcVolumeMode = (e.target as HTMLSelectElement).value)}
               >
                 <option value="Filesystem" selected>Filesystem</option>
                 <option value="Block">Block</option>
@@ -658,7 +678,8 @@ export class PVCList extends LitElement {
               <select
                 id="pvc-access-mode"
                 .value=${this.newPvcAccessMode}
-                @change=${(e: Event) => this.newPvcAccessMode = (e.target as HTMLSelectElement).value}
+                @change=${(e: Event) =>
+                  (this.newPvcAccessMode = (e.target as HTMLSelectElement).value)}
               >
                 <option value="ReadWriteOnce" selected>ReadWriteOnce (RWO)</option>
                 <option value="ReadOnlyMany">ReadOnlyMany (ROX)</option>
@@ -675,20 +696,25 @@ export class PVCList extends LitElement {
               <select
                 id="pvc-storage-class"
                 .value=${this.newPvcStorageClass}
-                @change=${(e: Event) => this.newPvcStorageClass = (e.target as HTMLSelectElement).value}
+                @change=${(e: Event) =>
+                  (this.newPvcStorageClass = (e.target as HTMLSelectElement).value)}
               >
                 <option value="">(cluster default)</option>
-                ${this.storageClasses.map(sc => html`
-                  <option value=${sc.metadata.name}>${sc.metadata.name}</option>
-                `)}
+                ${this.storageClasses.map(
+                  sc => html` <option value=${sc.metadata.name}>${sc.metadata.name}</option> `
+                )}
               </select>
-              ${this.storageClasses.length === 0 ? html`
-                <div class="storage-class-hint">No storage classes found in cluster</div>
-              ` : ''}
+              ${this.storageClasses.length === 0
+                ? html` <div class="storage-class-hint">No storage classes found in cluster</div> `
+                : ''}
             </div>
           </div>
           <div class="modal-footer">
-            <rh-button variant="secondary" @click=${this.closeCreateModal} ?disabled=${this.creating}>
+            <rh-button
+              variant="secondary"
+              @click=${this.closeCreateModal}
+              ?disabled=${this.creating}
+            >
               Cancel
             </rh-button>
             <rh-button @click=${this.createPVC} ?disabled=${this.creating}>
@@ -706,4 +732,3 @@ declare global {
     'pvc-list': PVCList;
   }
 }
-

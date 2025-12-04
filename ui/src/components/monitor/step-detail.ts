@@ -28,7 +28,7 @@ export class StepDetail extends LitElement {
     message: string;
     lastTimestamp: string;
   }> = [];
-  
+
   // Track if this is the initial load
   private initialLogsLoad = true;
   // Track the current job name to avoid unnecessary reloads
@@ -50,7 +50,8 @@ export class StepDetail extends LitElement {
       gap: var(--rh-space-md, 16px);
       padding-block-end: var(--rh-space-md, 16px);
       margin-block-end: var(--rh-space-md, 16px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .summary-item {
@@ -75,7 +76,8 @@ export class StepDetail extends LitElement {
     .tabs {
       display: flex;
       margin-block-end: var(--rh-space-md, 16px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .tab {
@@ -184,7 +186,8 @@ export class StepDetail extends LitElement {
       display: flex;
       justify-content: space-between;
       padding: var(--rh-space-sm, 8px) 0;
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .spec-item:last-child {
@@ -227,8 +230,12 @@ export class StepDetail extends LitElement {
       font-weight: var(--rh-font-weight-body-text-medium, 500);
     }
 
-    .event-type.normal { color: var(--rh-color-green-600, #3e8635); }
-    .event-type.warning { color: var(--rh-color-yellow-600, #f0ab00); }
+    .event-type.normal {
+      color: var(--rh-color-green-600, #3e8635);
+    }
+    .event-type.warning {
+      color: var(--rh-color-yellow-600, #f0ab00);
+    }
 
     .event-time {
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
@@ -244,7 +251,8 @@ export class StepDetail extends LitElement {
       gap: var(--rh-space-sm, 8px);
       padding-block-start: var(--rh-space-md, 16px);
       margin-block-start: var(--rh-space-md, 16px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
   `;
 
@@ -291,18 +299,13 @@ export class StepDetail extends LitElement {
 
     try {
       // Find the pod for this job
-      const pods = await k8sClient.listPods(
-        this.namespace,
-        `job-name=${this.status.jobName}`
-      );
+      const pods = await k8sClient.listPods(this.namespace, `job-name=${this.status.jobName}`);
 
       if (pods.length > 0) {
-        const newLogs = await k8sClient.getPodLogs(
-          this.namespace,
-          pods[0].metadata.name,
-          { tailLines: LOG_TAIL_LINES }
-        );
-        
+        const newLogs = await k8sClient.getPodLogs(this.namespace, pods[0].metadata.name, {
+          tailLines: LOG_TAIL_LINES,
+        });
+
         // Only update if logs have changed
         if (newLogs !== this.logs) {
           this.logs = newLogs;
@@ -364,7 +367,6 @@ export class StepDetail extends LitElement {
     return this.step?.jobSpec.template.spec.containers[0]?.image || '-';
   }
 
-
   private async copyToClipboard(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -407,7 +409,7 @@ export class StepDetail extends LitElement {
           class="tab ${this.activeTab === 0 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 0}
-          @click=${() => this.activeTab = 0}
+          @click=${() => (this.activeTab = 0)}
         >
           <rh-icon set="ui" icon="terminal"></rh-icon>
           Logs
@@ -416,7 +418,7 @@ export class StepDetail extends LitElement {
           class="tab ${this.activeTab === 1 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 1}
-          @click=${() => this.activeTab = 1}
+          @click=${() => (this.activeTab = 1)}
         >
           <rh-icon set="ui" icon="list"></rh-icon>
           Spec
@@ -425,16 +427,14 @@ export class StepDetail extends LitElement {
           class="tab ${this.activeTab === 2 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 2}
-          @click=${() => this.activeTab = 2}
+          @click=${() => (this.activeTab = 2)}
         >
           <rh-icon set="ui" icon="info-circle"></rh-icon>
           Debug
         </button>
       </nav>
 
-      <div class="tab-content" role="tabpanel">
-        ${this.renderTabContent()}
-      </div>
+      <div class="tab-content" role="tabpanel">${this.renderTabContent()}</div>
 
       <footer class="actions">
         <rh-button variant="secondary" @click=${this.loadLogs}>
@@ -453,10 +453,7 @@ export class StepDetail extends LitElement {
     switch (this.activeTab) {
       case 0:
         // Guard logs rendering - only re-render when these values change
-        return guard(
-          [this.logs, this.logsLoading, this.logsError],
-          () => this.renderLogs()
-        );
+        return guard([this.logs, this.logsLoading, this.logsError], () => this.renderLogs());
       case 1:
         return this.renderSpec();
       case 2:
@@ -499,7 +496,10 @@ export class StepDetail extends LitElement {
     return html`
       <div class="logs-wrapper">
         <div class="logs-header">
-          <span>Showing last ${lineCount} line${lineCount !== 1 ? 's' : ''} (tail ${LOG_TAIL_LINES})</span>
+          <span
+            >Showing last ${lineCount} line${lineCount !== 1 ? 's' : ''} (tail
+            ${LOG_TAIL_LINES})</span
+          >
         </div>
         <div class="logs-container">${this.logs}</div>
       </div>
@@ -521,20 +521,24 @@ export class StepDetail extends LitElement {
         </li>
         <li class="spec-item">
           <span class="spec-key">Restart Policy</span>
-          <span class="spec-value">${this.step?.jobSpec.template.spec.restartPolicy || 'Never'}</span>
+          <span class="spec-value"
+            >${this.step?.jobSpec.template.spec.restartPolicy || 'Never'}</span
+          >
         </li>
         <li class="spec-item">
           <span class="spec-key">Backoff Limit</span>
           <span class="spec-value">${this.step?.jobSpec.backoffLimit ?? 6}</span>
         </li>
-        ${this.step?.runIf ? html`
-          <li class="spec-item">
-            <span class="spec-key">Run If</span>
-            <span class="spec-value">
-              ${this.step.runIf.condition || 'success'} of ${this.step.runIf.steps.join(', ')}
-            </span>
-          </li>
-        ` : ''}
+        ${this.step?.runIf
+          ? html`
+              <li class="spec-item">
+                <span class="spec-key">Run If</span>
+                <span class="spec-value">
+                  ${this.step.runIf.condition || 'success'} of ${this.step.runIf.steps.join(', ')}
+                </span>
+              </li>
+            `
+          : ''}
       </ul>
     `;
   }
@@ -542,20 +546,26 @@ export class StepDetail extends LitElement {
   private renderDebug() {
     return html`
       <div class="events-list">
-        ${this.events.length === 0 ? html`
-          <div class="logs-empty">
-            <rh-icon set="ui" icon="info-circle"></rh-icon>
-            No events available
-          </div>
-        ` : this.events.map(event => html`
-          <article class="event-item">
-            <header class="event-header">
-              <span class="event-type ${event.type.toLowerCase()}">${event.reason}</span>
-              <time class="event-time">${new Date(event.lastTimestamp).toLocaleTimeString()}</time>
-            </header>
-            <p class="event-message">${event.message}</p>
-          </article>
-        `)}
+        ${this.events.length === 0
+          ? html`
+              <div class="logs-empty">
+                <rh-icon set="ui" icon="info-circle"></rh-icon>
+                No events available
+              </div>
+            `
+          : this.events.map(
+              event => html`
+                <article class="event-item">
+                  <header class="event-header">
+                    <span class="event-type ${event.type.toLowerCase()}">${event.reason}</span>
+                    <time class="event-time"
+                      >${new Date(event.lastTimestamp).toLocaleTimeString()}</time
+                    >
+                  </header>
+                  <p class="event-message">${event.message}</p>
+                </article>
+              `
+            )}
       </div>
     `;
   }

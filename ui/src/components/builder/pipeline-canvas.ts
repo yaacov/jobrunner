@@ -8,7 +8,11 @@ import { customElement, state } from 'lit/decorators.js';
 import type { Pipeline, PipelineStep } from '../../types/pipeline.js';
 import { k8sClient } from '../../lib/k8s-client.js';
 import { navigate } from '../../lib/router.js';
-import { createEmptyPipeline, createDefaultStep, validateStepName } from '../../lib/graph-layout.js';
+import {
+  createEmptyPipeline,
+  createDefaultStep,
+  validateStepName,
+} from '../../lib/graph-layout.js';
 
 interface CanvasStep extends PipelineStep {
   x: number;
@@ -215,7 +219,9 @@ export class PipelineCanvas extends LitElement {
       padding: var(--rh-space-lg, 24px);
       min-height: 500px;
       position: relative;
-      transition: border-color 150ms ease, background-color 150ms ease;
+      transition:
+        border-color 150ms ease,
+        background-color 150ms ease;
     }
 
     .canvas.drag-over {
@@ -321,7 +327,9 @@ export class PipelineCanvas extends LitElement {
       cursor: pointer;
       border-radius: var(--rh-border-radius-default, 3px);
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .step-action-btn:hover {
@@ -354,7 +362,6 @@ export class PipelineCanvas extends LitElement {
       height: 20px;
       background: var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
-
   `;
 
   connectedCallback() {
@@ -367,17 +374,17 @@ export class PipelineCanvas extends LitElement {
       const namespace = this.pipeline.metadata.namespace || 'default';
       const pipelines = await k8sClient.listPipelines(namespace);
       this.existingPipelineNames = new Set(pipelines.map(p => p.metadata.name));
-      
+
       // Generate a unique name
       const baseName = 'new-pipeline';
       let uniqueName = baseName;
       let counter = 1;
-      
+
       while (this.existingPipelineNames.has(uniqueName)) {
         counter++;
         uniqueName = `${baseName}-${counter}`;
       }
-      
+
       this.pipeline = {
         ...this.pipeline,
         metadata: {
@@ -487,7 +494,7 @@ export class PipelineCanvas extends LitElement {
       ...this.pipeline,
       spec: {
         ...this.pipeline.spec,
-        steps: this.canvasSteps.map(({ x, y, ...step }) => step),
+        steps: this.canvasSteps.map(({ x: _x, y: _y, ...step }) => step),
       },
     };
   }
@@ -576,12 +583,14 @@ export class PipelineCanvas extends LitElement {
 
   render() {
     return html`
-      ${this.error ? html`
-        <div class="error-banner" role="alert">
-          <rh-icon set="ui" icon="error-filled"></rh-icon>
-          ${this.error}
-        </div>
-      ` : ''}
+      ${this.error
+        ? html`
+            <div class="error-banner" role="alert">
+              <rh-icon set="ui" icon="error-filled"></rh-icon>
+              ${this.error}
+            </div>
+          `
+        : ''}
 
       <header class="header">
         <div class="header-left">
@@ -601,23 +610,27 @@ export class PipelineCanvas extends LitElement {
               aria-invalid=${this.nameError ? 'true' : 'false'}
               aria-describedby=${this.nameError ? 'name-error' : ''}
             />
-            ${this.nameError ? html`
-              <span id="name-error" class="name-error-text" role="alert">${this.nameError}</span>
-            ` : ''}
+            ${this.nameError
+              ? html`
+                  <span id="name-error" class="name-error-text" role="alert"
+                    >${this.nameError}</span
+                  >
+                `
+              : ''}
           </div>
         </div>
         <div class="header-actions">
           <rh-button
             variant="secondary"
-            @click=${() => { this.showGlobalSettings = true; this.showStepEditor = false; }}
+            @click=${() => {
+              this.showGlobalSettings = true;
+              this.showStepEditor = false;
+            }}
           >
             <rh-icon set="ui" icon="configure" slot="icon"></rh-icon>
             Settings
           </rh-button>
-          <rh-button
-            ?disabled=${this.saving}
-            @click=${this.savePipeline}
-          >
+          <rh-button ?disabled=${this.saving} @click=${this.savePipeline}>
             <rh-icon set="ui" icon="save" slot="icon"></rh-icon>
             ${this.saving ? 'Saving...' : 'Save Pipeline'}
           </rh-button>
@@ -730,66 +743,77 @@ export class PipelineCanvas extends LitElement {
           @dragleave=${this.handleCanvasDragLeave}
           @drop=${this.handleCanvasDrop}
         >
-          ${this.canvasSteps.length === 0 ? html`
-            <div class="canvas-empty">
-              <rh-icon set="standard" icon="data-science"></rh-icon>
-              <p>Drag steps here or click to add</p>
-            </div>
-          ` : html`
-            <div class="steps-list" role="list">
-              ${this.canvasSteps.map((step, index) => html`
-                ${index > 0 ? html`
-                  <div class="step-connector" aria-hidden="true">
-                    <div class="step-connector-line"></div>
-                  </div>
-                ` : ''}
-                <article
-                  class="step-card ${this.selectedStep === step.name ? 'selected' : ''}"
-                  role="listitem"
-                  tabindex="0"
-                  draggable="true"
-                  @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
-                  @dragend=${this.handleDragEnd}
-                  @dragover=${(e: DragEvent) => this.handleDragOver(e, index)}
-                  @click=${() => this.selectStep(step.name)}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      this.selectStep(step.name);
-                    }
-                  }}
-                >
-                  <span class="step-drag-handle" aria-label="Drag to reorder">
-                    <rh-icon set="ui" icon="grip-horizontal"></rh-icon>
-                  </span>
-                  <div class="step-info">
-                    <div class="step-name">${step.name}</div>
-                    <div class="step-image">${this.getStepImage(step)}</div>
-                  </div>
-                  <div class="step-actions">
-                    <button
-                      class="step-action-btn"
-                      title="Edit step"
-                      aria-label="Edit ${step.name}"
-                      @click=${(e: Event) => { e.stopPropagation(); this.selectStep(step.name); }}
-                    >
-                      <rh-icon set="ui" icon="edit"></rh-icon>
-                    </button>
-                    <button
-                      class="step-action-btn delete"
-                      title="Delete step"
-                      aria-label="Delete ${step.name}"
-                      @click=${(e: Event) => { e.stopPropagation(); this.removeStep(step.name); }}
-                    >
-                      <rh-icon set="ui" icon="trash"></rh-icon>
-                    </button>
-                  </div>
-                </article>
-              `)}
-            </div>
-          `}
+          ${this.canvasSteps.length === 0
+            ? html`
+                <div class="canvas-empty">
+                  <rh-icon set="standard" icon="data-science"></rh-icon>
+                  <p>Drag steps here or click to add</p>
+                </div>
+              `
+            : html`
+                <div class="steps-list" role="list">
+                  ${this.canvasSteps.map(
+                    (step, index) => html`
+                      ${index > 0
+                        ? html`
+                            <div class="step-connector" aria-hidden="true">
+                              <div class="step-connector-line"></div>
+                            </div>
+                          `
+                        : ''}
+                      <article
+                        class="step-card ${this.selectedStep === step.name ? 'selected' : ''}"
+                        role="listitem"
+                        tabindex="0"
+                        draggable="true"
+                        @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
+                        @dragend=${this.handleDragEnd}
+                        @dragover=${(e: DragEvent) => this.handleDragOver(e, index)}
+                        @click=${() => this.selectStep(step.name)}
+                        @keydown=${(e: KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.selectStep(step.name);
+                          }
+                        }}
+                      >
+                        <span class="step-drag-handle" aria-label="Drag to reorder">
+                          <rh-icon set="ui" icon="grip-horizontal"></rh-icon>
+                        </span>
+                        <div class="step-info">
+                          <div class="step-name">${step.name}</div>
+                          <div class="step-image">${this.getStepImage(step)}</div>
+                        </div>
+                        <div class="step-actions">
+                          <button
+                            class="step-action-btn"
+                            title="Edit step"
+                            aria-label="Edit ${step.name}"
+                            @click=${(e: Event) => {
+                              e.stopPropagation();
+                              this.selectStep(step.name);
+                            }}
+                          >
+                            <rh-icon set="ui" icon="edit"></rh-icon>
+                          </button>
+                          <button
+                            class="step-action-btn delete"
+                            title="Delete step"
+                            aria-label="Delete ${step.name}"
+                            @click=${(e: Event) => {
+                              e.stopPropagation();
+                              this.removeStep(step.name);
+                            }}
+                          >
+                            <rh-icon set="ui" icon="trash"></rh-icon>
+                          </button>
+                        </div>
+                      </article>
+                    `
+                  )}
+                </div>
+              `}
         </div>
-
       </div>
 
       <!-- Side Drawer for Global Settings -->
@@ -800,7 +824,9 @@ export class PipelineCanvas extends LitElement {
       >
         <global-settings
           .pipeline=${this.pipeline}
-          @update=${(e: CustomEvent) => { this.pipeline = e.detail.pipeline; }}
+          @update=${(e: CustomEvent) => {
+            this.pipeline = e.detail.pipeline;
+          }}
         ></global-settings>
       </side-drawer>
 
@@ -810,16 +836,21 @@ export class PipelineCanvas extends LitElement {
         heading="Edit Step"
         @close=${this.closeDrawer}
       >
-        ${this.selectedStep ? html`
-          <step-editor
-            .step=${this.canvasSteps.find(s => s.name === this.selectedStep)}
-            .allSteps=${this.canvasSteps.map(s => s.name)}
-            .namespace=${this.pipeline.metadata.namespace || 'default'}
-            @update=${(e: CustomEvent) => this.updateStep(this.selectedStep!, e.detail)}
-            @delete=${() => { this.removeStep(this.selectedStep!); this.closeDrawer(); }}
-            @close=${this.closeDrawer}
-          ></step-editor>
-        ` : ''}
+        ${this.selectedStep
+          ? html`
+              <step-editor
+                .step=${this.canvasSteps.find(s => s.name === this.selectedStep)}
+                .allSteps=${this.canvasSteps.map(s => s.name)}
+                .namespace=${this.pipeline.metadata.namespace || 'default'}
+                @update=${(e: CustomEvent) => this.updateStep(this.selectedStep!, e.detail)}
+                @delete=${() => {
+                  this.removeStep(this.selectedStep!);
+                  this.closeDrawer();
+                }}
+                @close=${this.closeDrawer}
+              ></step-editor>
+            `
+          : ''}
       </side-drawer>
     `;
   }

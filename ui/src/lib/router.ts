@@ -27,9 +27,9 @@ class AppRouter {
 
     // Listen for navigation events
     window.addEventListener('popstate', () => this.navigate(window.location.pathname));
-    
+
     // Handle link clicks
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       const link = (e.target as HTMLElement).closest('a[href]');
       if (link && link.getAttribute('href')?.startsWith('/')) {
         e.preventDefault();
@@ -48,7 +48,7 @@ class AppRouter {
   addRoute(path: string, component: string, name?: string): void {
     // Convert path params like :namespace to named groups
     const patternPath = path.replace(/:(\w+)/g, ':$1');
-    
+
     this.routes.push({
       pattern: new URLPattern({ pathname: patternPath }),
       component,
@@ -61,7 +61,7 @@ class AppRouter {
    */
   setRoutes(routes: Array<{ path: string; component: string; redirect?: string }>): void {
     this.routes = [];
-    
+
     for (const route of routes) {
       if (route.redirect) {
         // Handle redirects by adding a special route
@@ -82,7 +82,7 @@ class AppRouter {
       const result = route.pattern.exec(url);
       if (result) {
         const params: Record<string, string> = {};
-        
+
         // Extract pathname groups
         for (const [key, value] of Object.entries(result.pathname.groups)) {
           if (value !== undefined) {
@@ -146,8 +146,9 @@ class AppRouter {
 
     // Create new component
     const component = document.createElement(componentName);
-    
+
     // Pass route params as a property
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (component as any).location = { params };
 
     // Add to outlet
@@ -155,9 +156,11 @@ class AppRouter {
     this.currentComponent = component;
 
     // Dispatch navigation event
-    window.dispatchEvent(new CustomEvent('router-navigate', {
-      detail: { path: window.location.pathname, params, component: componentName },
-    }));
+    window.dispatchEvent(
+      new CustomEvent('router-navigate', {
+        detail: { path: window.location.pathname, params, component: componentName },
+      })
+    );
   }
 
   /**

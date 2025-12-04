@@ -53,8 +53,13 @@ export class StatusBadge extends LitElement {
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.6;
+      }
     }
 
     .running {
@@ -72,7 +77,12 @@ export class StatusBadge extends LitElement {
     const isRunning = this.status === 'Running';
 
     return html`
-      <rh-tag ?compact=${isCompact} color=${config.color} class="${isRunning ? 'running' : ''}" role="status">
+      <rh-tag
+        ?compact=${isCompact}
+        color=${config.color}
+        class="${isRunning ? 'running' : ''}"
+        role="status"
+      >
         ${config.label}
       </rh-tag>
     `;

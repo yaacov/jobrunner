@@ -25,7 +25,7 @@ export class SecretList extends LitElement {
   @state() private loading = true;
   @state() private error: string | null = null;
   @state() private namespace = 'default';
-  
+
   // Create modal state
   @state() private showCreateModal = false;
   @state() private creating = false;
@@ -90,7 +90,8 @@ export class SecretList extends LitElement {
     .secret-table td {
       padding: var(--rh-space-md, 16px);
       text-align: start;
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .secret-table th {
@@ -213,7 +214,9 @@ export class SecretList extends LitElement {
       border-radius: var(--rh-border-radius-default, 3px);
       cursor: pointer;
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .delete-btn:hover {
@@ -259,7 +262,8 @@ export class SecretList extends LitElement {
       justify-content: space-between;
       align-items: center;
       padding: var(--rh-space-lg, 24px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .modal-header h2 {
@@ -333,7 +337,8 @@ export class SecretList extends LitElement {
       justify-content: flex-end;
       gap: var(--rh-space-sm, 8px);
       padding: var(--rh-space-lg, 24px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .form-error {
@@ -485,7 +490,8 @@ export class SecretList extends LitElement {
       justify-content: space-between;
       gap: var(--rh-space-sm, 8px);
       padding: var(--rh-space-lg, 24px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .view-modal-footer .left-actions {
@@ -543,21 +549,31 @@ export class SecretList extends LitElement {
 
   private getTypeColor(type: string): string {
     switch (type) {
-      case 'Opaque': return 'purple';
-      case 'kubernetes.io/service-account-token': return 'blue';
-      case 'kubernetes.io/dockerconfigjson': return 'teal';
-      case 'kubernetes.io/tls': return 'green';
-      default: return 'gray';
+      case 'Opaque':
+        return 'purple';
+      case 'kubernetes.io/service-account-token':
+        return 'blue';
+      case 'kubernetes.io/dockerconfigjson':
+        return 'teal';
+      case 'kubernetes.io/tls':
+        return 'green';
+      default:
+        return 'gray';
     }
   }
 
   private getTypeLabel(type: string): string {
     switch (type) {
-      case 'Opaque': return 'Opaque';
-      case 'kubernetes.io/service-account-token': return 'SA Token';
-      case 'kubernetes.io/dockerconfigjson': return 'Docker';
-      case 'kubernetes.io/tls': return 'TLS';
-      default: return type.split('/').pop() || type;
+      case 'Opaque':
+        return 'Opaque';
+      case 'kubernetes.io/service-account-token':
+        return 'SA Token';
+      case 'kubernetes.io/dockerconfigjson':
+        return 'Docker';
+      case 'kubernetes.io/tls':
+        return 'TLS';
+      default:
+        return type.split('/').pop() || type;
     }
   }
 
@@ -614,7 +630,8 @@ export class SecretList extends LitElement {
     // Validate name (DNS subdomain name)
     const nameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
     if (!nameRegex.test(this.newSecretName)) {
-      this.createError = 'Name must consist of lowercase alphanumeric characters or "-", and must start and end with an alphanumeric character';
+      this.createError =
+        'Name must consist of lowercase alphanumeric characters or "-", and must start and end with an alphanumeric character';
       return;
     }
 
@@ -682,7 +699,7 @@ export class SecretList extends LitElement {
     this.closeViewModal();
     this.editingSecret = secret;
     this.editError = null;
-    
+
     // Convert secret data to key-value pairs
     const data = secret.data || {};
     this.editSecretPairs = Object.keys(data).map(key => ({
@@ -690,11 +707,11 @@ export class SecretList extends LitElement {
       value: this.decodeBase64(data[key]),
       revealed: false,
     }));
-    
+
     if (this.editSecretPairs.length === 0) {
       this.editSecretPairs = [{ key: '', value: '', revealed: false }];
     }
-    
+
     this.showEditModal = true;
   }
 
@@ -821,34 +838,42 @@ export class SecretList extends LitElement {
         </div>
       </div>
 
-      ${this.secrets.length === 0 ? html`
-        <div class="empty-state">
-          <rh-icon set="ui" icon="lock"></rh-icon>
-          <h3>No secrets found</h3>
-          <p>Create a secret to store sensitive data.</p>
-          <rh-cta>
-            <a href="#" @click=${(e: Event) => { e.preventDefault(); this.openCreateModal(); }}>Create Secret</a>
-          </rh-cta>
-        </div>
-      ` : html`
-        <div class="secret-table-container">
-          <table class="secret-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Keys</th>
-                <th>Created</th>
-                <th class="actions-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.secrets.map(secret => this.renderSecretRow(secret))}
-            </tbody>
-          </table>
-        </div>
-      `}
-
+      ${this.secrets.length === 0
+        ? html`
+            <div class="empty-state">
+              <rh-icon set="ui" icon="lock"></rh-icon>
+              <h3>No secrets found</h3>
+              <p>Create a secret to store sensitive data.</p>
+              <rh-cta>
+                <a
+                  href="#"
+                  @click=${(e: Event) => {
+                    e.preventDefault();
+                    this.openCreateModal();
+                  }}
+                  >Create Secret</a
+                >
+              </rh-cta>
+            </div>
+          `
+        : html`
+            <div class="secret-table-container">
+              <table class="secret-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Keys</th>
+                    <th>Created</th>
+                    <th class="actions-cell">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.secrets.map(secret => this.renderSecretRow(secret))}
+                </tbody>
+              </table>
+            </div>
+          `}
       ${this.showCreateModal ? this.renderCreateModal() : ''}
       ${this.showViewModal && this.viewingSecret ? this.renderViewModal() : ''}
       ${this.showEditModal && this.editingSecret ? this.renderEditModal() : ''}
@@ -873,17 +898,17 @@ export class SecretList extends LitElement {
         </td>
         <td>
           <div class="keys-list">
-            ${keys.length > 0 ? keys.slice(0, 5).map(key => html`
-              <rh-tag compact color="gray">${key}</rh-tag>
-            `) : html`<span class="empty-secret">No data</span>`}
-            ${keys.length > 5 ? html`
-              <rh-tag compact color="gray">+${keys.length - 5} more</rh-tag>
-            ` : ''}
+            ${keys.length > 0
+              ? keys.slice(0, 5).map(key => html` <rh-tag compact color="gray">${key}</rh-tag> `)
+              : html`<span class="empty-secret">No data</span>`}
+            ${keys.length > 5
+              ? html` <rh-tag compact color="gray">+${keys.length - 5} more</rh-tag> `
+              : ''}
           </div>
         </td>
         <td>
           <span class="created-time">
-            ${secret.metadata.creationTimestamp 
+            ${secret.metadata.creationTimestamp
               ? this.formatTime(secret.metadata.creationTimestamp)
               : '-'}
           </span>
@@ -904,9 +929,12 @@ export class SecretList extends LitElement {
 
   private renderCreateModal() {
     return html`
-      <div class="modal-overlay" @click=${(e: Event) => {
-        if (e.target === e.currentTarget) this.closeCreateModal();
-      }}>
+      <div
+        class="modal-overlay"
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this.closeCreateModal();
+        }}
+      >
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
           <div class="modal-header">
             <h2 id="create-modal-title">Create Secret</h2>
@@ -915,9 +943,7 @@ export class SecretList extends LitElement {
             </button>
           </div>
           <div class="modal-body">
-            ${this.createError ? html`
-              <div class="form-error">${this.createError}</div>
-            ` : ''}
+            ${this.createError ? html` <div class="form-error">${this.createError}</div> ` : ''}
 
             <div class="form-group">
               <label for="secret-name">Name *</label>
@@ -925,7 +951,7 @@ export class SecretList extends LitElement {
                 type="text"
                 id="secret-name"
                 .value=${this.newSecretName}
-                @input=${(e: Event) => this.newSecretName = (e.target as HTMLInputElement).value}
+                @input=${(e: Event) => (this.newSecretName = (e.target as HTMLInputElement).value)}
                 placeholder="my-secret"
               />
             </div>
@@ -933,41 +959,53 @@ export class SecretList extends LitElement {
             <div class="form-group">
               <label>Data (Key-Value Pairs) *</label>
               <div class="kv-list">
-                ${this.newSecretPairs.map((pair, index) => html`
-                  <div class="kv-row">
-                    <input
-                      type="text"
-                      placeholder="Key"
-                      .value=${pair.key}
-                      @input=${(e: Event) => this.updateCreateKeyValuePair(index, 'key', (e.target as HTMLInputElement).value)}
-                      aria-label="Key"
-                    />
-                    <input
-                      type="${pair.revealed ? 'text' : 'password'}"
-                      placeholder="Value"
-                      .value=${pair.value}
-                      @input=${(e: Event) => this.updateCreateKeyValuePair(index, 'value', (e.target as HTMLInputElement).value)}
-                      aria-label="Value"
-                    />
-                    <button
-                      class="icon-btn ${pair.revealed ? 'revealed' : ''}"
-                      @click=${() => this.toggleCreateReveal(index)}
-                      title="${pair.revealed ? 'Hide value' : 'Show value'}"
-                      aria-label="${pair.revealed ? 'Hide value' : 'Show value'}"
-                    >
-                      <rh-icon set="ui" icon="${pair.revealed ? 'view-off' : 'view'}"></rh-icon>
-                    </button>
-                    <button
-                      class="icon-btn danger"
-                      @click=${() => this.removeCreateKeyValuePair(index)}
-                      title="Remove"
-                      aria-label="Remove pair"
-                      ?disabled=${this.newSecretPairs.length === 1}
-                    >
-                      <rh-icon set="ui" icon="trash"></rh-icon>
-                    </button>
-                  </div>
-                `)}
+                ${this.newSecretPairs.map(
+                  (pair, index) => html`
+                    <div class="kv-row">
+                      <input
+                        type="text"
+                        placeholder="Key"
+                        .value=${pair.key}
+                        @input=${(e: Event) =>
+                          this.updateCreateKeyValuePair(
+                            index,
+                            'key',
+                            (e.target as HTMLInputElement).value
+                          )}
+                        aria-label="Key"
+                      />
+                      <input
+                        type="${pair.revealed ? 'text' : 'password'}"
+                        placeholder="Value"
+                        .value=${pair.value}
+                        @input=${(e: Event) =>
+                          this.updateCreateKeyValuePair(
+                            index,
+                            'value',
+                            (e.target as HTMLInputElement).value
+                          )}
+                        aria-label="Value"
+                      />
+                      <button
+                        class="icon-btn ${pair.revealed ? 'revealed' : ''}"
+                        @click=${() => this.toggleCreateReveal(index)}
+                        title="${pair.revealed ? 'Hide value' : 'Show value'}"
+                        aria-label="${pair.revealed ? 'Hide value' : 'Show value'}"
+                      >
+                        <rh-icon set="ui" icon="${pair.revealed ? 'view-off' : 'view'}"></rh-icon>
+                      </button>
+                      <button
+                        class="icon-btn danger"
+                        @click=${() => this.removeCreateKeyValuePair(index)}
+                        title="Remove"
+                        aria-label="Remove pair"
+                        ?disabled=${this.newSecretPairs.length === 1}
+                      >
+                        <rh-icon set="ui" icon="trash"></rh-icon>
+                      </button>
+                    </div>
+                  `
+                )}
                 <rh-button variant="secondary" @click=${this.addCreateKeyValuePair}>
                   <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
                   Add Key-Value Pair
@@ -976,7 +1014,11 @@ export class SecretList extends LitElement {
             </div>
           </div>
           <div class="modal-footer">
-            <rh-button variant="secondary" @click=${this.closeCreateModal} ?disabled=${this.creating}>
+            <rh-button
+              variant="secondary"
+              @click=${this.closeCreateModal}
+              ?disabled=${this.creating}
+            >
               Cancel
             </rh-button>
             <rh-button @click=${this.createSecret} ?disabled=${this.creating}>
@@ -995,9 +1037,12 @@ export class SecretList extends LitElement {
     const isOpaque = secret.type === 'Opaque';
 
     return html`
-      <div class="modal-overlay" @click=${(e: Event) => {
-        if (e.target === e.currentTarget) this.closeViewModal();
-      }}>
+      <div
+        class="modal-overlay"
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this.closeViewModal();
+        }}
+      >
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
           <div class="modal-header">
             <h2 id="view-modal-title">${secret.metadata.name}</h2>
@@ -1006,48 +1051,51 @@ export class SecretList extends LitElement {
             </button>
           </div>
           <div class="modal-body">
-            ${keys.length === 0 ? html`
-              <p class="empty-secret">This secret has no data.</p>
-            ` : html`
-              <div class="secret-data-list">
-                ${keys.map(key => {
-                  const isRevealed = this.revealedKeys.has(key);
-                  const decodedValue = this.decodeBase64(data[key]);
-                  
-                  return html`
-                    <div class="secret-data-item">
-                      <div class="secret-data-key">${key}</div>
-                      <div class="secret-data-value-row">
-                        <span class="secret-data-value ${isRevealed ? '' : 'hidden'}">
-                          ${isRevealed ? decodedValue : '••••••••'}
-                        </span>
-                        <button
-                          class="reveal-btn ${isRevealed ? 'revealed' : ''}"
-                          @click=${() => this.toggleReveal(key)}
-                          title="${isRevealed ? 'Hide value' : 'Show value'}"
-                          aria-label="${isRevealed ? 'Hide value' : 'Show value'}"
-                        >
-                          <rh-icon set="ui" icon="${isRevealed ? 'view-off' : 'view'}"></rh-icon>
-                        </button>
-                      </div>
-                    </div>
-                  `;
-                })}
-              </div>
-            `}
+            ${keys.length === 0
+              ? html` <p class="empty-secret">This secret has no data.</p> `
+              : html`
+                  <div class="secret-data-list">
+                    ${keys.map(key => {
+                      const isRevealed = this.revealedKeys.has(key);
+                      const decodedValue = this.decodeBase64(data[key]);
+
+                      return html`
+                        <div class="secret-data-item">
+                          <div class="secret-data-key">${key}</div>
+                          <div class="secret-data-value-row">
+                            <span class="secret-data-value ${isRevealed ? '' : 'hidden'}">
+                              ${isRevealed ? decodedValue : '••••••••'}
+                            </span>
+                            <button
+                              class="reveal-btn ${isRevealed ? 'revealed' : ''}"
+                              @click=${() => this.toggleReveal(key)}
+                              title="${isRevealed ? 'Hide value' : 'Show value'}"
+                              aria-label="${isRevealed ? 'Hide value' : 'Show value'}"
+                            >
+                              <rh-icon
+                                set="ui"
+                                icon="${isRevealed ? 'view-off' : 'view'}"
+                              ></rh-icon>
+                            </button>
+                          </div>
+                        </div>
+                      `;
+                    })}
+                  </div>
+                `}
           </div>
           <div class="view-modal-footer">
             <div class="left-actions">
-              ${isOpaque ? html`
-                <rh-button variant="secondary" @click=${() => this.openEditModal(secret)}>
-                  <rh-icon set="ui" icon="edit" slot="icon"></rh-icon>
-                  Edit
-                </rh-button>
-              ` : ''}
+              ${isOpaque
+                ? html`
+                    <rh-button variant="secondary" @click=${() => this.openEditModal(secret)}>
+                      <rh-icon set="ui" icon="edit" slot="icon"></rh-icon>
+                      Edit
+                    </rh-button>
+                  `
+                : ''}
             </div>
-            <rh-button variant="secondary" @click=${this.closeViewModal}>
-              Close
-            </rh-button>
+            <rh-button variant="secondary" @click=${this.closeViewModal}> Close </rh-button>
           </div>
         </div>
       </div>
@@ -1058,9 +1106,12 @@ export class SecretList extends LitElement {
     const secret = this.editingSecret!;
 
     return html`
-      <div class="modal-overlay" @click=${(e: Event) => {
-        if (e.target === e.currentTarget) this.closeEditModal();
-      }}>
+      <div
+        class="modal-overlay"
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this.closeEditModal();
+        }}
+      >
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
           <div class="modal-header">
             <h2 id="edit-modal-title">Edit: ${secret.metadata.name}</h2>
@@ -1069,47 +1120,57 @@ export class SecretList extends LitElement {
             </button>
           </div>
           <div class="modal-body">
-            ${this.editError ? html`
-              <div class="form-error">${this.editError}</div>
-            ` : ''}
+            ${this.editError ? html` <div class="form-error">${this.editError}</div> ` : ''}
 
             <div class="form-group">
               <label>Data (Key-Value Pairs) *</label>
               <div class="kv-list">
-                ${this.editSecretPairs.map((pair, index) => html`
-                  <div class="kv-row">
-                    <input
-                      type="text"
-                      placeholder="Key"
-                      .value=${pair.key}
-                      @input=${(e: Event) => this.updateEditKeyValuePair(index, 'key', (e.target as HTMLInputElement).value)}
-                      aria-label="Key"
-                    />
-                    <input
-                      type="${pair.revealed ? 'text' : 'password'}"
-                      placeholder="Value"
-                      .value=${pair.value}
-                      @input=${(e: Event) => this.updateEditKeyValuePair(index, 'value', (e.target as HTMLInputElement).value)}
-                      aria-label="Value"
-                    />
-                    <button
-                      class="icon-btn ${pair.revealed ? 'revealed' : ''}"
-                      @click=${() => this.toggleEditReveal(index)}
-                      title="${pair.revealed ? 'Hide value' : 'Show value'}"
-                      aria-label="${pair.revealed ? 'Hide value' : 'Show value'}"
-                    >
-                      <rh-icon set="ui" icon="${pair.revealed ? 'view-off' : 'view'}"></rh-icon>
-                    </button>
-                    <button
-                      class="icon-btn danger"
-                      @click=${() => this.removeEditKeyValuePair(index)}
-                      title="Remove"
-                      aria-label="Remove pair"
-                    >
-                      <rh-icon set="ui" icon="trash"></rh-icon>
-                    </button>
-                  </div>
-                `)}
+                ${this.editSecretPairs.map(
+                  (pair, index) => html`
+                    <div class="kv-row">
+                      <input
+                        type="text"
+                        placeholder="Key"
+                        .value=${pair.key}
+                        @input=${(e: Event) =>
+                          this.updateEditKeyValuePair(
+                            index,
+                            'key',
+                            (e.target as HTMLInputElement).value
+                          )}
+                        aria-label="Key"
+                      />
+                      <input
+                        type="${pair.revealed ? 'text' : 'password'}"
+                        placeholder="Value"
+                        .value=${pair.value}
+                        @input=${(e: Event) =>
+                          this.updateEditKeyValuePair(
+                            index,
+                            'value',
+                            (e.target as HTMLInputElement).value
+                          )}
+                        aria-label="Value"
+                      />
+                      <button
+                        class="icon-btn ${pair.revealed ? 'revealed' : ''}"
+                        @click=${() => this.toggleEditReveal(index)}
+                        title="${pair.revealed ? 'Hide value' : 'Show value'}"
+                        aria-label="${pair.revealed ? 'Hide value' : 'Show value'}"
+                      >
+                        <rh-icon set="ui" icon="${pair.revealed ? 'view-off' : 'view'}"></rh-icon>
+                      </button>
+                      <button
+                        class="icon-btn danger"
+                        @click=${() => this.removeEditKeyValuePair(index)}
+                        title="Remove"
+                        aria-label="Remove pair"
+                      >
+                        <rh-icon set="ui" icon="trash"></rh-icon>
+                      </button>
+                    </div>
+                  `
+                )}
                 <rh-button variant="secondary" @click=${this.addEditKeyValuePair}>
                   <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
                   Add Key-Value Pair

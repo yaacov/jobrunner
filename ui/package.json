@@ -6,7 +6,11 @@
     "dev": "bun run src/server.ts",
     "build": "bun build src/main.ts --outdir=dist --minify --sourcemap=external",
     "preview": "bun run src/server.ts --production",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "bunx tsc --noEmit",
+    "lint": "bunx eslint src --ext .ts,.js",
+    "lint:fix": "bunx eslint src --ext .ts,.js --fix",
+    "format": "bunx prettier --write \"src/**/*.{ts,js,css,html}\"",
+    "format:check": "bunx prettier --check \"src/**/*.{ts,js,css,html}\""
   },
   "dependencies": {
     "@rhds/elements": "^4.0.0",
@@ -16,7 +20,12 @@
     "lit": "^3.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.15.0",
     "@types/bun": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "prettier": "^3.4.0",
     "typescript": "^5.6.0"
   }
 }

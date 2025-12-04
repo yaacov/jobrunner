@@ -31,7 +31,7 @@ export class K8sClient {
         const error: ApiError = await response.json();
         errorMessage = error.message || errorMessage;
       } catch {
-        errorMessage = await response.text() || errorMessage;
+        errorMessage = (await response.text()) || errorMessage;
       }
       throw new Error(errorMessage);
     }
@@ -43,9 +43,10 @@ export class K8sClient {
    * List all pipelines in a namespace (or all namespaces)
    */
   async listPipelines(namespace = 'default'): Promise<Pipeline[]> {
-    const path = namespace === '_all'
-      ? '/apis/pipeline.yaacov.io/v1/pipelines'
-      : `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`;
+    const path =
+      namespace === '_all'
+        ? '/apis/pipeline.yaacov.io/v1/pipelines'
+        : `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`;
 
     const result = await this.request<PipelineList>(path);
     return result.items || [];
@@ -64,13 +65,10 @@ export class K8sClient {
    * Create a new pipeline
    */
   async createPipeline(namespace: string, pipeline: Pipeline): Promise<Pipeline> {
-    return this.request<Pipeline>(
-      `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`,
-      {
-        method: 'POST',
-        body: JSON.stringify(pipeline),
-      }
-    );
+    return this.request<Pipeline>(`/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`, {
+      method: 'POST',
+      body: JSON.stringify(pipeline),
+    });
   }
 
   /**
@@ -90,10 +88,9 @@ export class K8sClient {
    * Delete a pipeline
    */
   async deletePipeline(namespace: string, name: string): Promise<void> {
-    await this.request(
-      `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines/${name}`,
-      { method: 'DELETE' }
-    );
+    await this.request(`/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines/${name}`, {
+      method: 'DELETE',
+    });
   }
 
   /**
@@ -104,9 +101,10 @@ export class K8sClient {
     callback: (event: WatchEvent<Pipeline>) => void,
     resourceVersion?: string
   ): () => void {
-    const path = namespace === '_all'
-      ? '/apis/pipeline.yaacov.io/v1/pipelines'
-      : `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`;
+    const path =
+      namespace === '_all'
+        ? '/apis/pipeline.yaacov.io/v1/pipelines'
+        : `/apis/pipeline.yaacov.io/v1/namespaces/${namespace}/pipelines`;
 
     const params = new URLSearchParams({ watch: 'true' });
     if (resourceVersion) {
@@ -245,25 +243,27 @@ export class K8sClient {
   async getEvents(
     namespace: string,
     fieldSelector: string
-  ): Promise<Array<{
-    type: string;
-    reason: string;
-    message: string;
-    firstTimestamp: string;
-    lastTimestamp: string;
-    count: number;
-  }>> {
-    const params = new URLSearchParams({ fieldSelector });
-    const result = await this.request<{ items: Array<{
+  ): Promise<
+    Array<{
       type: string;
       reason: string;
       message: string;
       firstTimestamp: string;
       lastTimestamp: string;
       count: number;
-    }> }>(
-      `/api/v1/namespaces/${namespace}/events?${params}`
-    );
+    }>
+  > {
+    const params = new URLSearchParams({ fieldSelector });
+    const result = await this.request<{
+      items: Array<{
+        type: string;
+        reason: string;
+        message: string;
+        firstTimestamp: string;
+        lastTimestamp: string;
+        count: number;
+      }>;
+    }>(`/api/v1/namespaces/${namespace}/events?${params}`);
     return result.items || [];
   }
 
@@ -285,62 +285,81 @@ export class K8sClient {
   /**
    * Get a Job by name
    */
-  async getJob(namespace: string, name: string): Promise<{
+  async getJob(
+    namespace: string,
+    name: string
+  ): Promise<{
     metadata: { name: string; namespace: string };
     spec: Record<string, unknown>;
     status: Record<string, unknown>;
   }> {
-    return this.request(
-      `/apis/batch/v1/namespaces/${namespace}/jobs/${name}`
-    );
+    return this.request(`/apis/batch/v1/namespaces/${namespace}/jobs/${name}`);
   }
 
   /**
    * Get a Pod by name
    */
-  async getPod(namespace: string, name: string): Promise<{
+  async getPod(
+    namespace: string,
+    name: string
+  ): Promise<{
     metadata: { name: string; namespace: string };
     spec: Record<string, unknown>;
     status: Record<string, unknown>;
   }> {
-    return this.request(
-      `/api/v1/namespaces/${namespace}/pods/${name}`
-    );
+    return this.request(`/api/v1/namespaces/${namespace}/pods/${name}`);
   }
 
   /**
    * List pods by label selector
    */
-  async listPods(namespace: string, labelSelector: string): Promise<Array<{
-    metadata: { name: string; namespace: string };
-    status: { phase: string };
-  }>> {
-    const params = new URLSearchParams({ labelSelector });
-    const result = await this.request<{ items: Array<{
+  async listPods(
+    namespace: string,
+    labelSelector: string
+  ): Promise<
+    Array<{
       metadata: { name: string; namespace: string };
       status: { phase: string };
-    }> }>(
-      `/api/v1/namespaces/${namespace}/pods?${params}`
-    );
+    }>
+  > {
+    const params = new URLSearchParams({ labelSelector });
+    const result = await this.request<{
+      items: Array<{
+        metadata: { name: string; namespace: string };
+        status: { phase: string };
+      }>;
+    }>(`/api/v1/namespaces/${namespace}/pods?${params}`);
     return result.items || [];
   }
 
   /**
    * List PersistentVolumeClaims in a namespace
    */
-  async listPVCs(namespace: string): Promise<Array<{
-    metadata: { name: string; namespace: string; creationTimestamp?: string };
-    spec: { accessModes?: string[]; storageClassName?: string; volumeMode?: string; resources?: { requests?: { storage?: string } } };
-    status: { phase: string };
-  }>> {
+  async listPVCs(namespace: string): Promise<
+    Array<{
+      metadata: { name: string; namespace: string; creationTimestamp?: string };
+      spec: {
+        accessModes?: string[];
+        storageClassName?: string;
+        volumeMode?: string;
+        resources?: { requests?: { storage?: string } };
+      };
+      status: { phase: string };
+    }>
+  > {
     try {
-      const result = await this.request<{ items: Array<{
-        metadata: { name: string; namespace: string; creationTimestamp?: string };
-        spec: { accessModes?: string[]; storageClassName?: string; volumeMode?: string; resources?: { requests?: { storage?: string } } };
-        status: { phase: string };
-      }> }>(
-        `/api/v1/namespaces/${namespace}/persistentvolumeclaims`
-      );
+      const result = await this.request<{
+        items: Array<{
+          metadata: { name: string; namespace: string; creationTimestamp?: string };
+          spec: {
+            accessModes?: string[];
+            storageClassName?: string;
+            volumeMode?: string;
+            resources?: { requests?: { storage?: string } };
+          };
+          status: { phase: string };
+        }>;
+      }>(`/api/v1/namespaces/${namespace}/persistentvolumeclaims`);
       return result.items || [];
     } catch {
       // If we can't list PVCs, return empty array
@@ -351,69 +370,70 @@ export class K8sClient {
   /**
    * Create a PersistentVolumeClaim
    */
-  async createPVC(namespace: string, pvc: {
-    name: string;
-    storageClassName?: string;
-    accessModes: string[];
-    volumeMode: string;
-    storage: string;
-  }): Promise<void> {
-    await this.request(
-      `/api/v1/namespaces/${namespace}/persistentvolumeclaims`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          apiVersion: 'v1',
-          kind: 'PersistentVolumeClaim',
-          metadata: {
-            name: pvc.name,
-            namespace: namespace,
-          },
-          spec: {
-            accessModes: pvc.accessModes,
-            volumeMode: pvc.volumeMode,
-            storageClassName: pvc.storageClassName || undefined,
-            resources: {
-              requests: {
-                storage: pvc.storage,
-              },
+  async createPVC(
+    namespace: string,
+    pvc: {
+      name: string;
+      storageClassName?: string;
+      accessModes: string[];
+      volumeMode: string;
+      storage: string;
+    }
+  ): Promise<void> {
+    await this.request(`/api/v1/namespaces/${namespace}/persistentvolumeclaims`, {
+      method: 'POST',
+      body: JSON.stringify({
+        apiVersion: 'v1',
+        kind: 'PersistentVolumeClaim',
+        metadata: {
+          name: pvc.name,
+          namespace: namespace,
+        },
+        spec: {
+          accessModes: pvc.accessModes,
+          volumeMode: pvc.volumeMode,
+          storageClassName: pvc.storageClassName || undefined,
+          resources: {
+            requests: {
+              storage: pvc.storage,
             },
           },
-        }),
-      }
-    );
+        },
+      }),
+    });
   }
 
   /**
    * Delete a PersistentVolumeClaim
    */
   async deletePVC(namespace: string, name: string): Promise<void> {
-    await this.request(
-      `/api/v1/namespaces/${namespace}/persistentvolumeclaims/${name}`,
-      { method: 'DELETE' }
-    );
+    await this.request(`/api/v1/namespaces/${namespace}/persistentvolumeclaims/${name}`, {
+      method: 'DELETE',
+    });
   }
 
   /**
    * List StorageClasses
    */
-  async listStorageClasses(): Promise<Array<{
-    metadata: { name: string };
-    provisioner: string;
-    reclaimPolicy?: string;
-    volumeBindingMode?: string;
-    allowVolumeExpansion?: boolean;
-  }>> {
+  async listStorageClasses(): Promise<
+    Array<{
+      metadata: { name: string };
+      provisioner: string;
+      reclaimPolicy?: string;
+      volumeBindingMode?: string;
+      allowVolumeExpansion?: boolean;
+    }>
+  > {
     try {
-      const result = await this.request<{ items: Array<{
-        metadata: { name: string };
-        provisioner: string;
-        reclaimPolicy?: string;
-        volumeBindingMode?: string;
-        allowVolumeExpansion?: boolean;
-      }> }>(
-        '/apis/storage.k8s.io/v1/storageclasses'
-      );
+      const result = await this.request<{
+        items: Array<{
+          metadata: { name: string };
+          provisioner: string;
+          reclaimPolicy?: string;
+          volumeBindingMode?: string;
+          allowVolumeExpansion?: boolean;
+        }>;
+      }>('/apis/storage.k8s.io/v1/storageclasses');
       return result.items || [];
     } catch {
       return [];
@@ -423,19 +443,21 @@ export class K8sClient {
   /**
    * List Secrets in a namespace
    */
-  async listSecrets(namespace: string): Promise<Array<{
-    metadata: { name: string; namespace: string; creationTimestamp?: string };
-    type: string;
-    data?: Record<string, string>;
-  }>> {
+  async listSecrets(namespace: string): Promise<
+    Array<{
+      metadata: { name: string; namespace: string; creationTimestamp?: string };
+      type: string;
+      data?: Record<string, string>;
+    }>
+  > {
     try {
-      const result = await this.request<{ items: Array<{
-        metadata: { name: string; namespace: string; creationTimestamp?: string };
-        type: string;
-        data?: Record<string, string>;
-      }> }>(
-        `/api/v1/namespaces/${namespace}/secrets`
-      );
+      const result = await this.request<{
+        items: Array<{
+          metadata: { name: string; namespace: string; creationTimestamp?: string };
+          type: string;
+          data?: Record<string, string>;
+        }>;
+      }>(`/api/v1/namespaces/${namespace}/secrets`);
       return result.items || [];
     } catch {
       return [];
@@ -445,55 +467,53 @@ export class K8sClient {
   /**
    * Get a single Secret
    */
-  async getSecret(namespace: string, name: string): Promise<{
+  async getSecret(
+    namespace: string,
+    name: string
+  ): Promise<{
     metadata: { name: string; namespace: string; creationTimestamp?: string };
     type: string;
     data?: Record<string, string>;
   }> {
-    return this.request(
-      `/api/v1/namespaces/${namespace}/secrets/${name}`
-    );
+    return this.request(`/api/v1/namespaces/${namespace}/secrets/${name}`);
   }
 
   /**
    * Create an Opaque Secret
    */
-  async createSecret(namespace: string, secret: {
-    name: string;
-    data: Record<string, string>;
-  }): Promise<void> {
+  async createSecret(
+    namespace: string,
+    secret: {
+      name: string;
+      data: Record<string, string>;
+    }
+  ): Promise<void> {
     // Base64 encode all values
     const encodedData: Record<string, string> = {};
     for (const [key, value] of Object.entries(secret.data)) {
       encodedData[key] = btoa(value);
     }
 
-    await this.request(
-      `/api/v1/namespaces/${namespace}/secrets`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          apiVersion: 'v1',
-          kind: 'Secret',
-          metadata: {
-            name: secret.name,
-            namespace: namespace,
-          },
-          type: 'Opaque',
-          data: encodedData,
-        }),
-      }
-    );
+    await this.request(`/api/v1/namespaces/${namespace}/secrets`, {
+      method: 'POST',
+      body: JSON.stringify({
+        apiVersion: 'v1',
+        kind: 'Secret',
+        metadata: {
+          name: secret.name,
+          namespace: namespace,
+        },
+        type: 'Opaque',
+        data: encodedData,
+      }),
+    });
   }
 
   /**
    * Delete a Secret
    */
   async deleteSecret(namespace: string, name: string): Promise<void> {
-    await this.request(
-      `/api/v1/namespaces/${namespace}/secrets/${name}`,
-      { method: 'DELETE' }
-    );
+    await this.request(`/api/v1/namespaces/${namespace}/secrets/${name}`, { method: 'DELETE' });
   }
 
   /**
@@ -506,25 +526,21 @@ export class K8sClient {
       encodedData[key] = btoa(value);
     }
 
-    await this.request(
-      `/api/v1/namespaces/${namespace}/secrets/${name}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({
-          apiVersion: 'v1',
-          kind: 'Secret',
-          metadata: {
-            name: name,
-            namespace: namespace,
-          },
-          type: 'Opaque',
-          data: encodedData,
-        }),
-      }
-    );
+    await this.request(`/api/v1/namespaces/${namespace}/secrets/${name}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        apiVersion: 'v1',
+        kind: 'Secret',
+        metadata: {
+          name: name,
+          namespace: namespace,
+        },
+        type: 'Opaque',
+        data: encodedData,
+      }),
+    });
   }
 }
 
 // Singleton instance
 export const k8sClient = new K8sClient();
-

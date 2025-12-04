@@ -3,7 +3,7 @@
  * Built with Bun for fast development and production serving
  */
 
-import { readFileSync, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import { join, extname } from 'path';
 
 const isProduction = Bun.argv.includes('--production');
@@ -34,7 +34,7 @@ const MIME_TYPES: Record<string, string> = {
  */
 async function buildApp(): Promise<boolean> {
   console.log('📦 Building application...');
-  
+
   const result = await Bun.build({
     entrypoints: ['./src/main.ts'],
     outdir: './dist',
@@ -70,7 +70,7 @@ function serveStatic(path: string): Response | null {
       const ext = extname(path).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
       const file = Bun.file(filePath);
-      
+
       return new Response(file, {
         headers: {
           'Content-Type': contentType,
@@ -88,19 +88,19 @@ function serveStatic(path: string): Response | null {
  */
 async function proxyToK8s(req: Request, path: string): Promise<Response> {
   const targetUrl = `${K8S_API_URL}${path}`;
-  
+
   try {
     const proxyReq = new Request(targetUrl, {
       method: req.method,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: req.body,
     });
 
     const response = await fetch(proxyReq);
-    
+
     return new Response(response.body, {
       status: response.status,
       headers: {
@@ -120,7 +120,7 @@ async function proxyToK8s(req: Request, path: string): Promise<Response> {
 /**
  * Main server
  */
-const server = Bun.serve({
+Bun.serve({
   port: PORT,
 
   async fetch(req) {
@@ -185,7 +185,7 @@ const server = Bun.serve({
 // Build and start
 async function start() {
   const buildSuccess = await buildApp();
-  
+
   if (!buildSuccess && isProduction) {
     console.error('Production build failed, exiting');
     process.exit(1);
@@ -211,4 +211,3 @@ process.on('SIGINT', () => {
   console.log('\n👋 Shutting down...');
   process.exit(0);
 });
-

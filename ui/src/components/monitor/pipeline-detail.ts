@@ -5,7 +5,14 @@
 
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { Pipeline, StepStatus, PipelineStep, PipelineGraph, PipelineEdge, PipelineNode } from '../../types/pipeline.js';
+import type {
+  Pipeline,
+  StepStatus,
+  PipelineStep,
+  PipelineGraph,
+  PipelineEdge,
+  PipelineNode,
+} from '../../types/pipeline.js';
 import { k8sClient } from '../../lib/k8s-client.js';
 import { navigate } from '../../lib/router.js';
 import { pipelineToGraph, layoutGraph } from '../../lib/graph-layout.js';
@@ -78,7 +85,7 @@ export class PipelineDetail extends LitElement {
       text-decoration: underline;
     }
 
-    rh-breadcrumb a[aria-current="page"] {
+    rh-breadcrumb a[aria-current='page'] {
       color: var(--rh-color-text-primary-on-light, #151515);
       pointer-events: none;
     }
@@ -175,9 +182,15 @@ export class PipelineDetail extends LitElement {
       box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
     }
 
-    .graph-node.succeeded { border-color: var(--rh-color-green-500, #3e8635); }
-    .graph-node.running { border-color: var(--rh-color-teal-500, #009596); }
-    .graph-node.failed { border-color: var(--rh-color-red-500, #c9190b); }
+    .graph-node.succeeded {
+      border-color: var(--rh-color-green-500, #3e8635);
+    }
+    .graph-node.running {
+      border-color: var(--rh-color-teal-500, #009596);
+    }
+    .graph-node.failed {
+      border-color: var(--rh-color-red-500, #c9190b);
+    }
 
     .node-header {
       display: flex;
@@ -247,7 +260,8 @@ export class PipelineDetail extends LitElement {
     .timeline-table td {
       padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
       text-align: start;
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .timeline-table th {
@@ -294,7 +308,9 @@ export class PipelineDetail extends LitElement {
       border-radius: var(--rh-border-radius-default, 3px);
       cursor: pointer;
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .kebab-btn:hover {
@@ -305,7 +321,6 @@ export class PipelineDetail extends LitElement {
     .kebab-btn:focus {
       outline: none;
     }
-
 
     .kebab-menu {
       position: absolute;
@@ -405,7 +420,6 @@ export class PipelineDetail extends LitElement {
       --rh-focus-outline-width: 0;
     }
 
-
     rh-tab:focus,
     rh-tab:focus-within,
     rh-tab-panel:focus {
@@ -489,7 +503,9 @@ export class PipelineDetail extends LitElement {
   private async deletePipeline() {
     if (!this.pipeline) return;
 
-    const confirmed = confirm(`Are you sure you want to delete pipeline "${this.pipeline.metadata.name}"?`);
+    const confirmed = confirm(
+      `Are you sure you want to delete pipeline "${this.pipeline.metadata.name}"?`
+    );
     if (!confirmed) return;
 
     try {
@@ -560,7 +576,16 @@ export class PipelineDetail extends LitElement {
     return html`
       <rh-breadcrumb>
         <ol>
-          <li><a href="/monitor" @click=${(e: Event) => { e.preventDefault(); navigate('/monitor'); }}>Pipelines</a></li>
+          <li>
+            <a
+              href="/monitor"
+              @click=${(e: Event) => {
+                e.preventDefault();
+                navigate('/monitor');
+              }}
+              >Pipelines</a
+            >
+          </li>
           <li><a href="" aria-current="page">${this.pipeline.metadata.name}</a></li>
         </ol>
       </rh-breadcrumb>
@@ -578,11 +603,19 @@ export class PipelineDetail extends LitElement {
             </div>
             <div class="header-meta-item">
               <span class="header-meta-label">Duration</span>
-              <span>${this.formatDuration(this.pipeline.status?.startTime, this.pipeline.status?.completionTime)}</span>
+              <span
+                >${this.formatDuration(
+                  this.pipeline.status?.startTime,
+                  this.pipeline.status?.completionTime
+                )}</span
+              >
             </div>
             <div class="header-meta-item">
               <span class="header-meta-label">Steps</span>
-              <span>${this.pipeline.status?.steps?.filter(s => s.phase === 'Succeeded').length || 0}/${this.pipeline.spec.steps.length}</span>
+              <span
+                >${this.pipeline.status?.steps?.filter(s => s.phase === 'Succeeded').length ||
+                0}/${this.pipeline.spec.steps.length}</span
+              >
             </div>
           </div>
         </div>
@@ -598,38 +631,34 @@ export class PipelineDetail extends LitElement {
         </div>
       </header>
 
-      <rh-tabs @click=${(e: Event) => {
-        const tab = (e.target as HTMLElement).closest('rh-tab');
-        if (tab) {
-          const tabs = this.shadowRoot?.querySelectorAll('rh-tab');
-          tabs?.forEach((t, i) => {
-            if (t === tab) this.activeTab = i;
-          });
-        }
-      }}>
+      <rh-tabs
+        @click=${(e: Event) => {
+          const tab = (e.target as HTMLElement).closest('rh-tab');
+          if (tab) {
+            const tabs = this.shadowRoot?.querySelectorAll('rh-tab');
+            tabs?.forEach((t, i) => {
+              if (t === tab) this.activeTab = i;
+            });
+          }
+        }}
+      >
         <rh-tab slot="tab">
           <rh-icon set="standard" icon="network" slot="icon"></rh-icon>
           Graph
         </rh-tab>
-        <rh-tab-panel>
-          ${this.renderGraph()}
-        </rh-tab-panel>
+        <rh-tab-panel> ${this.renderGraph()} </rh-tab-panel>
 
         <rh-tab slot="tab">
           <rh-icon set="ui" icon="list" slot="icon"></rh-icon>
           Timeline
         </rh-tab>
-        <rh-tab-panel>
-          ${this.renderTimeline()}
-        </rh-tab-panel>
+        <rh-tab-panel> ${this.renderTimeline()} </rh-tab-panel>
 
         <rh-tab slot="tab">
           <rh-icon set="ui" icon="code" slot="icon"></rh-icon>
           YAML
         </rh-tab>
-        <rh-tab-panel>
-          ${this.renderYaml()}
-        </rh-tab-panel>
+        <rh-tab-panel> ${this.renderYaml()} </rh-tab-panel>
       </rh-tabs>
 
       <div class="content">
@@ -658,7 +687,7 @@ export class PipelineDetail extends LitElement {
     // Only update cached values if step changed or status meaningfully changed
     const stepChanged = this.cachedStepName !== this.selectedStep;
     const statusChanged = this.hasStatusChanged(this.cachedStatus, status);
-    
+
     if (stepChanged || statusChanged || !this.cachedStep) {
       this.cachedStep = step;
       this.cachedStatus = status || null;
@@ -674,10 +703,13 @@ export class PipelineDetail extends LitElement {
     `;
   }
 
-  private hasStatusChanged(oldStatus: StepStatus | null | undefined, newStatus: StepStatus | null | undefined): boolean {
+  private hasStatusChanged(
+    oldStatus: StepStatus | null | undefined,
+    newStatus: StepStatus | null | undefined
+  ): boolean {
     if (!oldStatus && !newStatus) return false;
     if (!oldStatus || !newStatus) return true;
-    
+
     // Compare key fields that would affect the UI
     return (
       oldStatus.phase !== newStatus.phase ||
@@ -696,14 +728,14 @@ export class PipelineDetail extends LitElement {
     const nodeWidth = 240;
     const nodeHeight = 100;
     const padding = 20;
-    
+
     let maxX = 0;
     let maxY = 0;
     for (const node of this.graph.nodes) {
       maxX = Math.max(maxX, node.position.x + nodeWidth);
       maxY = Math.max(maxY, node.position.y + nodeHeight);
     }
-    
+
     const canvasWidth = maxX + padding;
     const canvasHeight = maxY + padding;
 
@@ -736,10 +768,24 @@ export class PipelineDetail extends LitElement {
               <marker id="arrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
                 <path d="M0,0 L6,3 L0,6 z" class="graph-arrow" />
               </marker>
-              <marker id="arrow-success" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+              <marker
+                id="arrow-success"
+                markerWidth="6"
+                markerHeight="6"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
                 <path d="M0,0 L6,3 L0,6 z" class="graph-arrow success" />
               </marker>
-              <marker id="arrow-failure" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+              <marker
+                id="arrow-failure"
+                markerWidth="6"
+                markerHeight="6"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
                 <path d="M0,0 L6,3 L0,6 z" class="graph-arrow failure" />
               </marker>
             </defs>
@@ -747,49 +793,53 @@ export class PipelineDetail extends LitElement {
               const sourceNode = nodePositions.get(edge.source);
               const targetNode = nodePositions.get(edge.target);
               if (!sourceNode || !targetNode) return '';
-              
+
               // Calculate offset for this edge among all outgoing edges from source
               const sourceEdges = outgoingEdges.get(edge.source) || [];
               const sourceIndex = sourceEdges.indexOf(edge);
               const sourceCount = sourceEdges.length;
-              
+
               // Calculate offset for this edge among all incoming edges to target
               const targetEdges = incomingEdges.get(edge.target) || [];
               const targetIndex = targetEdges.indexOf(edge);
               const targetCount = targetEdges.length;
-              
+
               // Spread connection points around center (max 120px total spread)
               const maxSpread = 120;
               const centerX = nodeWidth / 2;
-              
+
               // Calculate X position for source (bottom of node)
               const sourceSpread = Math.min(maxSpread, (sourceCount - 1) * 25);
               const sourceStartX = centerX - sourceSpread / 2;
               const sourceSpacing = sourceCount > 1 ? sourceSpread / (sourceCount - 1) : 0;
-              const sourceOffsetX = sourceCount > 1 
-                ? sourceStartX + sourceIndex * sourceSpacing 
-                : centerX;
+              const sourceOffsetX =
+                sourceCount > 1 ? sourceStartX + sourceIndex * sourceSpacing : centerX;
               const x1 = sourceNode.x + sourceOffsetX;
               const y1 = sourceNode.y + nodeHeight; // Start at bottom of source node
-              
+
               // Calculate X position for target (top of node)
               const targetSpread = Math.min(maxSpread, (targetCount - 1) * 25);
               const targetStartX = centerX - targetSpread / 2;
               const targetSpacing = targetCount > 1 ? targetSpread / (targetCount - 1) : 0;
-              const targetOffsetX = targetCount > 1 
-                ? targetStartX + targetIndex * targetSpacing 
-                : centerX;
+              const targetOffsetX =
+                targetCount > 1 ? targetStartX + targetIndex * targetSpacing : centerX;
               const x2 = targetNode.x + targetOffsetX;
               const y2 = targetNode.y - 2; // End at top of target node (arrow will point to it)
-              
+
               // Create a curved path with control points offset for smoother curves
               const deltaY = y2 - y1;
               const controlOffset = Math.max(Math.abs(deltaY) * 0.4, 20);
               const path = `M ${x1} ${y1} C ${x1} ${y1 + controlOffset}, ${x2} ${y2 - controlOffset}, ${x2} ${y2}`;
-              
-              const edgeClass = edge.type === 'failure' ? 'failure' : edge.type === 'success' ? 'success' : '';
-              const markerId = edge.type === 'failure' ? 'arrow-failure' : edge.type === 'success' ? 'arrow-success' : 'arrow';
-              
+
+              const edgeClass =
+                edge.type === 'failure' ? 'failure' : edge.type === 'success' ? 'success' : '';
+              const markerId =
+                edge.type === 'failure'
+                  ? 'arrow-failure'
+                  : edge.type === 'success'
+                    ? 'arrow-success'
+                    : 'arrow';
+
               return svg`
                 <path 
                   class="graph-edge ${edgeClass}" 
@@ -799,7 +849,7 @@ export class PipelineDetail extends LitElement {
               `;
             })}
           </svg>
-          
+
           <!-- Render nodes -->
           ${this.graph.nodes.map((node: PipelineNode) => {
             const phase = node.data.status?.phase?.toLowerCase() || 'pending';
@@ -819,7 +869,10 @@ export class PipelineDetail extends LitElement {
                 }}
               >
                 <div class="node-header">
-                  <status-badge status=${node.data.status?.phase || 'Pending'} size="sm"></status-badge>
+                  <status-badge
+                    status=${node.data.status?.phase || 'Pending'}
+                    size="sm"
+                  ></status-badge>
                   <span class="node-name">${node.data.step.name}</span>
                 </div>
                 <div class="node-image">${this.getStepImage(node.data.step)}</div>
@@ -852,39 +905,56 @@ export class PipelineDetail extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${steps.map(({ spec, status }) => html`
-              <tr @click=${() => this.selectStep(spec.name)}>
-                <td><strong>${spec.name}</strong></td>
-                <td>
-                  <status-badge status=${status?.phase || 'Pending'} size="sm"></status-badge>
-                </td>
-                <td>${status?.jobStatus?.startTime ? new Date(status.jobStatus.startTime).toLocaleTimeString() : '-'}</td>
-                <td>${this.formatDuration(status?.jobStatus?.startTime, status?.jobStatus?.completionTime)}</td>
-                <td class="actions-cell">
-                  <button
-                    class="kebab-btn"
-                    @click=${(e: Event) => this.toggleMenu(e, spec.name)}
-                    aria-label="Actions for ${spec.name}"
-                    aria-haspopup="true"
-                    aria-expanded=${this.openMenuId === spec.name}
-                  >
-                    <rh-icon set="ui" icon="ellipsis-vertical"></rh-icon>
-                  </button>
-                  ${this.openMenuId === spec.name ? html`
-                    <div class="kebab-menu" role="menu">
-                      <button
-                        class="kebab-menu-item"
-                        role="menuitem"
-                        @click=${(e: Event) => { e.stopPropagation(); this.closeMenu(); this.selectStep(spec.name); }}
-                      >
-                        <rh-icon set="ui" icon="eye"></rh-icon>
-                        View Details
-                      </button>
-                    </div>
-                  ` : ''}
-                </td>
-              </tr>
-            `)}
+            ${steps.map(
+              ({ spec, status }) => html`
+                <tr @click=${() => this.selectStep(spec.name)}>
+                  <td><strong>${spec.name}</strong></td>
+                  <td>
+                    <status-badge status=${status?.phase || 'Pending'} size="sm"></status-badge>
+                  </td>
+                  <td>
+                    ${status?.jobStatus?.startTime
+                      ? new Date(status.jobStatus.startTime).toLocaleTimeString()
+                      : '-'}
+                  </td>
+                  <td>
+                    ${this.formatDuration(
+                      status?.jobStatus?.startTime,
+                      status?.jobStatus?.completionTime
+                    )}
+                  </td>
+                  <td class="actions-cell">
+                    <button
+                      class="kebab-btn"
+                      @click=${(e: Event) => this.toggleMenu(e, spec.name)}
+                      aria-label="Actions for ${spec.name}"
+                      aria-haspopup="true"
+                      aria-expanded=${this.openMenuId === spec.name}
+                    >
+                      <rh-icon set="ui" icon="ellipsis-vertical"></rh-icon>
+                    </button>
+                    ${this.openMenuId === spec.name
+                      ? html`
+                          <div class="kebab-menu" role="menu">
+                            <button
+                              class="kebab-menu-item"
+                              role="menuitem"
+                              @click=${(e: Event) => {
+                                e.stopPropagation();
+                                this.closeMenu();
+                                this.selectStep(spec.name);
+                              }}
+                            >
+                              <rh-icon set="ui" icon="eye"></rh-icon>
+                              View Details
+                            </button>
+                          </div>
+                        `
+                      : ''}
+                  </td>
+                </tr>
+              `
+            )}
           </tbody>
         </table>
       </rh-table>
@@ -900,12 +970,13 @@ export class PipelineDetail extends LitElement {
     return html`
       <div class="yaml-container">
         <rh-code-block>
-          <script type="application/json">${yaml}</script>
+          <script type="application/json">
+            ${yaml}
+          </script>
         </rh-code-block>
       </div>
     `;
   }
-
 }
 
 declare global {

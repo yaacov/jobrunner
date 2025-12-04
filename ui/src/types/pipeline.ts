@@ -40,13 +40,13 @@ export interface ListMeta {
 export interface PipelineSpec {
   /** List of steps/jobs to run */
   steps: PipelineStep[];
-  
+
   /** Service account for all jobs (can be overridden per step) */
   serviceAccountName?: string;
-  
+
   /** Shared volume mounted to all steps */
   sharedVolume?: SharedVolumeSpec;
-  
+
   /** Common pod configuration applied to all steps */
   podTemplate?: PodTemplateDefaults;
 }
@@ -54,10 +54,10 @@ export interface PipelineSpec {
 export interface PipelineStep {
   /** Unique identifier for this step (1-63 chars, lowercase alphanumeric + hyphens) */
   name: string;
-  
+
   /** Conditional execution - if not specified, runs sequentially */
   runIf?: RunIfCondition;
-  
+
   /** Kubernetes Job specification */
   jobSpec: JobSpec;
 }
@@ -65,10 +65,10 @@ export interface PipelineStep {
 export interface RunIfCondition {
   /** Whether to check for success or failure (default: success) */
   condition?: 'success' | 'fail';
-  
+
   /** Whether ALL or ANY steps must meet condition (default: and) */
   operator?: 'and' | 'or';
-  
+
   /** List of step names to check */
   steps: string[];
 }
@@ -76,19 +76,19 @@ export interface RunIfCondition {
 export interface SharedVolumeSpec {
   /** Volume name (default: workspace) */
   name?: string;
-  
+
   /** Mount path in each step (default: /workspace) */
   mountPath?: string;
-  
+
   /** PersistentVolumeClaim source */
   persistentVolumeClaim?: { claimName: string };
-  
+
   /** EmptyDir source */
   emptyDir?: { medium?: string; sizeLimit?: string };
-  
+
   /** ConfigMap source */
   configMap?: { name: string };
-  
+
   /** Secret source */
   secret?: { secretName: string };
 }
@@ -96,43 +96,43 @@ export interface SharedVolumeSpec {
 export interface PodTemplateDefaults {
   /** Default container image for steps */
   image?: string;
-  
+
   /** Environment variables injected into all containers */
   env?: EnvVar[];
-  
+
   /** Environment from ConfigMaps/Secrets */
   envFrom?: EnvFromSource[];
-  
+
   /** Node selector for pod scheduling */
   nodeSelector?: Record<string, string>;
-  
+
   /** Tolerations for pod scheduling */
   tolerations?: Toleration[];
-  
+
   /** Affinity rules */
   affinity?: Affinity;
-  
+
   /** Pod security context */
   securityContext?: PodSecurityContext;
-  
+
   /** Image pull secrets */
   imagePullSecrets?: LocalObjectReference[];
-  
+
   /** Priority class name */
   priorityClassName?: string;
-  
+
   /** Runtime class name */
   runtimeClassName?: string;
-  
+
   /** Custom scheduler name */
   schedulerName?: string;
-  
+
   /** Labels added to all pods */
   labels?: Record<string, string>;
-  
+
   /** Annotations added to all pods */
   annotations?: Record<string, string>;
-  
+
   /** Default resource requirements */
   defaultResources?: ResourceRequirements;
 }
@@ -363,16 +363,16 @@ export interface ContainerPort {
 export interface PipelineStatus {
   /** Current phase of the pipeline */
   phase: PipelinePhase;
-  
+
   /** When the pipeline started */
   startTime?: string;
-  
+
   /** When the pipeline completed */
   completionTime?: string;
-  
+
   /** Status of each step */
   steps: StepStatus[];
-  
+
   /** Kubernetes-style conditions */
   conditions?: Condition[];
 }
@@ -384,13 +384,13 @@ export type StepPhase = 'Pending' | 'Running' | 'Suspended' | 'Succeeded' | 'Fai
 export interface StepStatus {
   /** Step name */
   name: string;
-  
+
   /** Current phase of the step */
   phase: StepPhase;
-  
+
   /** Name of the Job created for this step */
   jobName?: string;
-  
+
   /** Status from the underlying Kubernetes Job */
   jobStatus?: JobStatus;
 }
@@ -473,5 +473,3 @@ export interface ApiError {
   reason: string;
   code: number;
 }
-
-

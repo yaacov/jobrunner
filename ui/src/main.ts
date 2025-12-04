@@ -1,6 +1,6 @@
 /**
  * JobRunner UI - Main Entry Point
- * 
+ *
  * A pipeline builder and monitor for Kubernetes using
  * Red Hat Design System components.
  */
@@ -55,7 +55,7 @@ import { initRouter } from './lib/router.js';
 // Initialize app when DOM is ready
 function initApp() {
   const app = document.getElementById('app');
-  
+
   if (!app) {
     console.error('App container not found');
     return;
@@ -84,4 +84,3 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
-

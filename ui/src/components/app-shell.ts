@@ -100,7 +100,8 @@ export class AppShell extends LitElement {
 
     .namespace-select {
       width: 100%;
-      padding: var(--rh-space-sm, 8px) var(--rh-space-xl, 32px) var(--rh-space-sm, 8px) var(--rh-space-sm, 8px);
+      padding: var(--rh-space-sm, 8px) var(--rh-space-xl, 32px) var(--rh-space-sm, 8px)
+        var(--rh-space-sm, 8px);
       border: 1px solid var(--rh-color-border-subtle-on-light, #d2d2d2);
       border-radius: var(--rh-border-radius-default, 3px);
       background: var(--rh-color-surface-lightest, #ffffff);
@@ -194,21 +195,28 @@ export class AppShell extends LitElement {
     this.namespace = select.value;
 
     // Dispatch custom event for child components
-    this.dispatchEvent(new CustomEvent('namespace-change', {
-      detail: { namespace: this.namespace },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('namespace-change', {
+        detail: { namespace: this.namespace },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   render() {
     return html`
       <a href="#main-content" class="skip-link">Skip to main content</a>
-      
+
       <!-- Primary Navigation -->
       <rh-navigation-primary color-palette="darkest">
         <!-- Logo -->
-        <a slot="logo" href="/" class="logo" @click=${(e: Event) => this.handleNavClick(e, '/monitor')}>
+        <a
+          slot="logo"
+          href="/"
+          class="logo"
+          @click=${(e: Event) => this.handleNavClick(e, '/monitor')}
+        >
           <span class="logo-text">JobRunner</span>
         </a>
       </rh-navigation-primary>
@@ -226,11 +234,9 @@ export class AppShell extends LitElement {
               @change=${this.handleNamespaceChange}
               aria-label="Select namespace"
             >
-              ${this.namespaces.map(ns => html`
-                <option value=${ns} ?selected=${ns === this.namespace}>
-                  ${ns}
-                </option>
-              `)}
+              ${this.namespaces.map(
+                ns => html` <option value=${ns} ?selected=${ns === this.namespace}>${ns}</option> `
+              )}
             </select>
           </div>
 

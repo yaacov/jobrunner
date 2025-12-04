@@ -31,7 +31,8 @@ export class GlobalSettings extends LitElement {
       display: flex;
       gap: var(--rh-space-xs, 4px);
       margin-block-end: var(--rh-space-lg, 24px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .tab {
@@ -78,8 +79,8 @@ export class GlobalSettings extends LitElement {
       font-size: var(--rh-font-size-body-text-xs, 0.75rem);
     }
 
-    input[type="text"],
-    input[type="number"],
+    input[type='text'],
+    input[type='number'],
     select {
       width: 100%;
       padding: var(--rh-space-sm, 8px);
@@ -193,8 +194,12 @@ export class GlobalSettings extends LitElement {
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .pvc-selector-row .icon-btn.loading rh-icon {
@@ -232,9 +237,11 @@ export class GlobalSettings extends LitElement {
   }
 
   private dispatchUpdate() {
-    this.dispatchEvent(new CustomEvent('update', {
-      detail: { pipeline: this.pipeline },
-    }));
+    this.dispatchEvent(
+      new CustomEvent('update', {
+        detail: { pipeline: this.pipeline },
+      })
+    );
   }
 
   private updateSpec(field: string, value: unknown) {
@@ -337,7 +344,7 @@ export class GlobalSettings extends LitElement {
           class="tab ${this.activeTab === 0 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 0}
-          @click=${() => this.activeTab = 0}
+          @click=${() => (this.activeTab = 0)}
         >
           General
         </button>
@@ -345,7 +352,7 @@ export class GlobalSettings extends LitElement {
           class="tab ${this.activeTab === 1 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 1}
-          @click=${() => this.activeTab = 1}
+          @click=${() => (this.activeTab = 1)}
         >
           Pod Template
         </button>
@@ -353,7 +360,7 @@ export class GlobalSettings extends LitElement {
           class="tab ${this.activeTab === 2 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 2}
-          @click=${() => this.activeTab = 2}
+          @click=${() => (this.activeTab = 2)}
         >
           Shared Volume
         </button>
@@ -361,15 +368,13 @@ export class GlobalSettings extends LitElement {
           class="tab ${this.activeTab === 3 ? 'active' : ''}"
           role="tab"
           aria-selected=${this.activeTab === 3}
-          @click=${() => this.activeTab = 3}
+          @click=${() => (this.activeTab = 3)}
         >
           Environment
         </button>
       </nav>
 
-      <div role="tabpanel">
-        ${this.renderTabContent()}
-      </div>
+      <div role="tabpanel">${this.renderTabContent()}</div>
     `;
   }
 
@@ -514,110 +519,127 @@ export class GlobalSettings extends LitElement {
         <label for="enable-volume">Enable shared volume</label>
       </div>
 
-      ${hasVolume ? html`
-        <div class="form-group">
-          <label for="volume-name">Volume Name</label>
-          <input
-            type="text"
-            id="volume-name"
-            .value=${sharedVolume?.name || 'workspace'}
-            @input=${(e: Event) => {
-              this.updateSharedVolume('name', (e.target as HTMLInputElement).value);
-            }}
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="mount-path">Mount Path</label>
-          <input
-            type="text"
-            id="mount-path"
-            .value=${sharedVolume?.mountPath || '/workspace'}
-            @input=${(e: Event) => {
-              this.updateSharedVolume('mountPath', (e.target as HTMLInputElement).value);
-            }}
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="volume-type">Volume Type</label>
-          <select
-            id="volume-type"
-            @change=${(e: Event) => {
-              const type = (e.target as HTMLSelectElement).value;
-              if (type === 'emptyDir') {
-                this.updateSharedVolume('emptyDir', {});
-                this.updateSharedVolume('persistentVolumeClaim', undefined);
-              } else {
-                this.updateSharedVolume('emptyDir', undefined);
-                this.updateSharedVolume('persistentVolumeClaim', { claimName: '' });
-              }
-            }}
-          >
-            <option value="emptyDir" ?selected=${!!sharedVolume?.emptyDir}>
-              EmptyDir (temporary)
-            </option>
-            <option value="pvc" ?selected=${!!sharedVolume?.persistentVolumeClaim}>
-              PersistentVolumeClaim
-            </option>
-          </select>
-        </div>
-
-        ${sharedVolume?.persistentVolumeClaim !== undefined ? html`
-          <div class="form-group">
-            <label for="pvc-name">PVC Name</label>
-            <div class="pvc-selector-row">
-              ${this.loadingPVCs ? html`
-                <select id="pvc-name" disabled>
-                  <option>Loading PVCs...</option>
-                </select>
-              ` : this.availablePVCs.length > 0 ? html`
-                <select
-                  id="pvc-name"
-                  @change=${(e: Event) => {
-                    this.updateSharedVolume('persistentVolumeClaim', {
-                      claimName: (e.target as HTMLSelectElement).value,
-                    });
-                  }}
-                >
-                  <option value="" ?selected=${!sharedVolume.persistentVolumeClaim?.claimName}>
-                    -- Select a PVC --
-                  </option>
-                  ${this.availablePVCs.map(pvc => html`
-                    <option
-                      value=${pvc.name}
-                      ?selected=${sharedVolume.persistentVolumeClaim?.claimName === pvc.name}
-                    >
-                      ${pvc.name}${pvc.storage ? ` (${pvc.storage})` : ''}${pvc.phase !== 'Bound' ? ` [${pvc.phase}]` : ''}
-                    </option>
-                  `)}
-                </select>
-              ` : html`
-                <input
-                  type="text"
-                  id="pvc-name"
-                  .value=${sharedVolume.persistentVolumeClaim?.claimName || ''}
-                  placeholder="No PVCs found - enter name manually"
-                  @input=${(e: Event) => {
-                    this.updateSharedVolume('persistentVolumeClaim', {
-                      claimName: (e.target as HTMLInputElement).value,
-                    });
-                  }}
-                />
-              `}
-              <button
-                class="icon-btn ${this.loadingPVCs ? 'loading' : ''}"
-                @click=${() => this.fetchPVCs(this.pipeline?.metadata.namespace || 'default')}
-                title="Refresh PVC list"
-                aria-label="Refresh PVC list"
-                ?disabled=${this.loadingPVCs}
-              >
-                <rh-icon set="ui" icon="sync"></rh-icon>
-              </button>
+      ${hasVolume
+        ? html`
+            <div class="form-group">
+              <label for="volume-name">Volume Name</label>
+              <input
+                type="text"
+                id="volume-name"
+                .value=${sharedVolume?.name || 'workspace'}
+                @input=${(e: Event) => {
+                  this.updateSharedVolume('name', (e.target as HTMLInputElement).value);
+                }}
+              />
             </div>
-          </div>
-        ` : ''}
-      ` : ''}
+
+            <div class="form-group">
+              <label for="mount-path">Mount Path</label>
+              <input
+                type="text"
+                id="mount-path"
+                .value=${sharedVolume?.mountPath || '/workspace'}
+                @input=${(e: Event) => {
+                  this.updateSharedVolume('mountPath', (e.target as HTMLInputElement).value);
+                }}
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="volume-type">Volume Type</label>
+              <select
+                id="volume-type"
+                @change=${(e: Event) => {
+                  const type = (e.target as HTMLSelectElement).value;
+                  if (type === 'emptyDir') {
+                    this.updateSharedVolume('emptyDir', {});
+                    this.updateSharedVolume('persistentVolumeClaim', undefined);
+                  } else {
+                    this.updateSharedVolume('emptyDir', undefined);
+                    this.updateSharedVolume('persistentVolumeClaim', { claimName: '' });
+                  }
+                }}
+              >
+                <option value="emptyDir" ?selected=${!!sharedVolume?.emptyDir}>
+                  EmptyDir (temporary)
+                </option>
+                <option value="pvc" ?selected=${!!sharedVolume?.persistentVolumeClaim}>
+                  PersistentVolumeClaim
+                </option>
+              </select>
+            </div>
+
+            ${sharedVolume?.persistentVolumeClaim !== undefined
+              ? html`
+                  <div class="form-group">
+                    <label for="pvc-name">PVC Name</label>
+                    <div class="pvc-selector-row">
+                      ${this.loadingPVCs
+                        ? html`
+                            <select id="pvc-name" disabled>
+                              <option>Loading PVCs...</option>
+                            </select>
+                          `
+                        : this.availablePVCs.length > 0
+                          ? html`
+                              <select
+                                id="pvc-name"
+                                @change=${(e: Event) => {
+                                  this.updateSharedVolume('persistentVolumeClaim', {
+                                    claimName: (e.target as HTMLSelectElement).value,
+                                  });
+                                }}
+                              >
+                                <option
+                                  value=""
+                                  ?selected=${!sharedVolume.persistentVolumeClaim?.claimName}
+                                >
+                                  -- Select a PVC --
+                                </option>
+                                ${this.availablePVCs.map(
+                                  pvc => html`
+                                    <option
+                                      value=${pvc.name}
+                                      ?selected=${sharedVolume.persistentVolumeClaim?.claimName ===
+                                      pvc.name}
+                                    >
+                                      ${pvc.name}${pvc.storage
+                                        ? ` (${pvc.storage})`
+                                        : ''}${pvc.phase !== 'Bound' ? ` [${pvc.phase}]` : ''}
+                                    </option>
+                                  `
+                                )}
+                              </select>
+                            `
+                          : html`
+                              <input
+                                type="text"
+                                id="pvc-name"
+                                .value=${sharedVolume.persistentVolumeClaim?.claimName || ''}
+                                placeholder="No PVCs found - enter name manually"
+                                @input=${(e: Event) => {
+                                  this.updateSharedVolume('persistentVolumeClaim', {
+                                    claimName: (e.target as HTMLInputElement).value,
+                                  });
+                                }}
+                              />
+                            `}
+                      <button
+                        class="icon-btn ${this.loadingPVCs ? 'loading' : ''}"
+                        @click=${() =>
+                          this.fetchPVCs(this.pipeline?.metadata.namespace || 'default')}
+                        title="Refresh PVC list"
+                        aria-label="Refresh PVC list"
+                        ?disabled=${this.loadingPVCs}
+                      >
+                        <rh-icon set="ui" icon="sync"></rh-icon>
+                      </button>
+                    </div>
+                  </div>
+                `
+              : ''}
+          `
+        : ''}
     `;
   }
 
@@ -631,32 +653,36 @@ export class GlobalSettings extends LitElement {
       </div>
 
       <div class="env-list">
-        ${envVars.map((env, index) => html`
-          <div class="env-row">
-            <input
-              type="text"
-              placeholder="Name"
-              .value=${env.name}
-              @input=${(e: Event) => this.updateEnvVar(index, 'name', (e.target as HTMLInputElement).value)}
-              aria-label="Variable name"
-            />
-            <input
-              type="text"
-              placeholder="Value"
-              .value=${env.value || ''}
-              @input=${(e: Event) => this.updateEnvVar(index, 'value', (e.target as HTMLInputElement).value)}
-              aria-label="Variable value"
-            />
-            <button
-              class="icon-btn danger"
-              @click=${() => this.removeEnvVar(index)}
-              title="Remove variable"
-              aria-label="Remove variable"
-            >
-              <rh-icon set="ui" icon="trash"></rh-icon>
-            </button>
-          </div>
-        `)}
+        ${envVars.map(
+          (env, index) => html`
+            <div class="env-row">
+              <input
+                type="text"
+                placeholder="Name"
+                .value=${env.name}
+                @input=${(e: Event) =>
+                  this.updateEnvVar(index, 'name', (e.target as HTMLInputElement).value)}
+                aria-label="Variable name"
+              />
+              <input
+                type="text"
+                placeholder="Value"
+                .value=${env.value || ''}
+                @input=${(e: Event) =>
+                  this.updateEnvVar(index, 'value', (e.target as HTMLInputElement).value)}
+                aria-label="Variable value"
+              />
+              <button
+                class="icon-btn danger"
+                @click=${() => this.removeEnvVar(index)}
+                title="Remove variable"
+                aria-label="Remove variable"
+              >
+                <rh-icon set="ui" icon="trash"></rh-icon>
+              </button>
+            </div>
+          `
+        )}
         <rh-button variant="secondary" @click=${this.addEnvVar}>
           <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
           Add Variable

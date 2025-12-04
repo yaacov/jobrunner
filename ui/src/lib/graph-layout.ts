@@ -29,7 +29,7 @@ export function pipelineToGraph(pipeline: Pipeline): PipelineGraph {
   // Create nodes for each step
   pipeline.spec.steps.forEach((step, index) => {
     const status = pipeline.status?.steps?.find(s => s.name === step.name);
-    
+
     nodes.push({
       id: step.name,
       type: 'step',
@@ -165,9 +165,10 @@ export function validateStepName(name: string): { valid: boolean; error?: string
     return { valid: false, error: 'Name must be 63 characters or less' };
   }
   if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(name)) {
-    return { 
-      valid: false, 
-      error: 'Name must be lowercase alphanumeric with hyphens, starting and ending with alphanumeric' 
+    return {
+      valid: false,
+      error:
+        'Name must be lowercase alphanumeric with hyphens, starting and ending with alphanumeric',
     };
   }
   return { valid: true };
@@ -183,7 +184,7 @@ export function wouldCreateCycle(
 ): boolean {
   // Build adjacency list
   const adjacency = new Map<string, Set<string>>();
-  
+
   for (const edge of edges) {
     if (!adjacency.has(edge.source)) {
       adjacency.set(edge.source, new Set());
@@ -227,4 +228,3 @@ export function wouldCreateCycle(
 
   return false;
 }
-

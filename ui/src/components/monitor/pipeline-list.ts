@@ -64,7 +64,9 @@ export class PipelineList extends LitElement {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a6e73' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: var(--rh-space-sm, 8px) center;
-      transition: border-color 150ms ease, box-shadow 150ms ease;
+      transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease;
     }
 
     .search-input:focus {
@@ -88,7 +90,8 @@ export class PipelineList extends LitElement {
     .pipeline-table td {
       padding: var(--rh-space-md, 16px);
       text-align: start;
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .pipeline-table th {
@@ -172,8 +175,13 @@ export class PipelineList extends LitElement {
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
     }
 
     .step-running {
@@ -186,8 +194,13 @@ export class PipelineList extends LitElement {
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
     }
 
     .step-chip.running rh-icon {
@@ -263,7 +276,9 @@ export class PipelineList extends LitElement {
       border-radius: var(--rh-border-radius-default, 3px);
       cursor: pointer;
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      transition: background-color 150ms ease, color 150ms ease;
+      transition:
+        background-color 150ms ease,
+        color 150ms ease;
     }
 
     .kebab-btn:hover {
@@ -283,7 +298,6 @@ export class PipelineList extends LitElement {
     .kebab-btn rh-icon {
       --rh-icon-size: 18px;
     }
-
 
     .kebab-menu {
       position: absolute;
@@ -383,19 +397,24 @@ export class PipelineList extends LitElement {
   }
 
   private getCompletedSteps(steps: StepStatus[]): number {
-    return steps.filter(s =>
-      s.phase === 'Succeeded' || s.phase === 'Failed' || s.phase === 'Skipped'
+    return steps.filter(
+      s => s.phase === 'Succeeded' || s.phase === 'Failed' || s.phase === 'Skipped'
     ).length;
   }
 
   private getStepState(phase: string): 'inactive' | 'active' | 'complete' | 'warn' | 'fail' {
     switch (phase) {
-      case 'Succeeded': return 'complete';
-      case 'Running': return 'active';
-      case 'Failed': return 'fail';
-      case 'Skipped': return 'inactive';
+      case 'Succeeded':
+        return 'complete';
+      case 'Running':
+        return 'active';
+      case 'Failed':
+        return 'fail';
+      case 'Skipped':
+        return 'inactive';
       case 'Pending':
-      default: return 'inactive';
+      default:
+        return 'inactive';
     }
   }
 
@@ -416,19 +435,17 @@ export class PipelineList extends LitElement {
 
   private get filteredPipelines(): Pipeline[] {
     let result = this.pipelines;
-    
+
     // Filter by search query
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.metadata.name.toLowerCase().includes(query)
-      );
+      result = result.filter(p => p.metadata.name.toLowerCase().includes(query));
     }
-    
+
     // Sort
     result = [...result].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (this.sortColumn) {
         case 'name':
           comparison = a.metadata.name.localeCompare(b.metadata.name);
@@ -436,16 +453,21 @@ export class PipelineList extends LitElement {
         case 'status':
           comparison = (a.status?.phase || 'Pending').localeCompare(b.status?.phase || 'Pending');
           break;
-        case 'created':
-          const aTime = a.metadata.creationTimestamp ? new Date(a.metadata.creationTimestamp).getTime() : 0;
-          const bTime = b.metadata.creationTimestamp ? new Date(b.metadata.creationTimestamp).getTime() : 0;
+        case 'created': {
+          const aTime = a.metadata.creationTimestamp
+            ? new Date(a.metadata.creationTimestamp).getTime()
+            : 0;
+          const bTime = b.metadata.creationTimestamp
+            ? new Date(b.metadata.creationTimestamp).getTime()
+            : 0;
           comparison = aTime - bTime;
           break;
+        }
       }
-      
+
       return this.sortDirection === 'asc' ? comparison : -comparison;
     });
-    
+
     return result;
   }
 
@@ -476,7 +498,9 @@ export class PipelineList extends LitElement {
     e.stopPropagation();
     this.closeMenu();
 
-    const confirmed = confirm(`Are you sure you want to delete pipeline "${pipeline.metadata.name}"?`);
+    const confirmed = confirm(
+      `Are you sure you want to delete pipeline "${pipeline.metadata.name}"?`
+    );
     if (!confirmed) return;
 
     try {
@@ -489,31 +513,6 @@ export class PipelineList extends LitElement {
     } catch (err) {
       alert(`Failed to delete pipeline: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.loadPipelines();
-
-    // Poll for updates every 5 seconds
-    this.pollInterval = setInterval(() => this.loadPipelines(), 5000);
-
-    // Listen for namespace changes
-    window.addEventListener('namespace-change', ((e: CustomEvent) => {
-      this.namespace = e.detail.namespace;
-      this.loadPipelines();
-    }) as EventListener);
-
-    // Close menu when clicking outside
-    document.addEventListener('click', () => this.closeMenu());
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-    }
-    document.removeEventListener('click', () => this.closeMenu());
   }
 
   render() {
@@ -551,7 +550,7 @@ export class PipelineList extends LitElement {
             class="search-input"
             placeholder="Search pipelines..."
             .value=${this.searchQuery}
-            @input=${(e: Event) => this.searchQuery = (e.target as HTMLInputElement).value}
+            @input=${(e: Event) => (this.searchQuery = (e.target as HTMLInputElement).value)}
             aria-label="Search pipelines"
           />
           <rh-button @click=${() => navigate('/builder')}>
@@ -561,57 +560,59 @@ export class PipelineList extends LitElement {
         </div>
       </div>
 
-      ${this.filteredPipelines.length === 0 ? html`
-        <div class="empty-state">
-          <rh-icon set="standard" icon="data-science"></rh-icon>
-          <h3>No pipelines found</h3>
-          <p>Create your first pipeline to get started.</p>
-          <rh-cta>
-            <a href="/builder">Create Pipeline</a>
-          </rh-cta>
-        </div>
-      ` : html`
-        <div class="pipeline-table-container">
-          <table class="pipeline-table">
-            <thead>
-              <tr>
-                <th 
-                  class="sortable ${this.sortColumn === 'name' ? 'active' : ''}"
-                  @click=${() => this.toggleSort('name')}
-                >
-                  <span class="sort-header">
-                    Name
-                    <rh-icon set="ui" icon=${this.getSortIcon('name')}></rh-icon>
-                  </span>
-                </th>
-                <th 
-                  class="sortable ${this.sortColumn === 'status' ? 'active' : ''}"
-                  @click=${() => this.toggleSort('status')}
-                >
-                  <span class="sort-header">
-                    Status
-                    <rh-icon set="ui" icon=${this.getSortIcon('status')}></rh-icon>
-                  </span>
-                </th>
-                <th>Steps</th>
-                <th 
-                  class="sortable ${this.sortColumn === 'created' ? 'active' : ''}"
-                  @click=${() => this.toggleSort('created')}
-                >
-                  <span class="sort-header">
-                    Created
-                    <rh-icon set="ui" icon=${this.getSortIcon('created')}></rh-icon>
-                  </span>
-                </th>
-                <th class="actions-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.filteredPipelines.map(pipeline => this.renderPipelineRow(pipeline))}
-            </tbody>
-          </table>
-        </div>
-      `}
+      ${this.filteredPipelines.length === 0
+        ? html`
+            <div class="empty-state">
+              <rh-icon set="standard" icon="data-science"></rh-icon>
+              <h3>No pipelines found</h3>
+              <p>Create your first pipeline to get started.</p>
+              <rh-cta>
+                <a href="/builder">Create Pipeline</a>
+              </rh-cta>
+            </div>
+          `
+        : html`
+            <div class="pipeline-table-container">
+              <table class="pipeline-table">
+                <thead>
+                  <tr>
+                    <th
+                      class="sortable ${this.sortColumn === 'name' ? 'active' : ''}"
+                      @click=${() => this.toggleSort('name')}
+                    >
+                      <span class="sort-header">
+                        Name
+                        <rh-icon set="ui" icon=${this.getSortIcon('name')}></rh-icon>
+                      </span>
+                    </th>
+                    <th
+                      class="sortable ${this.sortColumn === 'status' ? 'active' : ''}"
+                      @click=${() => this.toggleSort('status')}
+                    >
+                      <span class="sort-header">
+                        Status
+                        <rh-icon set="ui" icon=${this.getSortIcon('status')}></rh-icon>
+                      </span>
+                    </th>
+                    <th>Steps</th>
+                    <th
+                      class="sortable ${this.sortColumn === 'created' ? 'active' : ''}"
+                      @click=${() => this.toggleSort('created')}
+                    >
+                      <span class="sort-header">
+                        Created
+                        <rh-icon set="ui" icon=${this.getSortIcon('created')}></rh-icon>
+                      </span>
+                    </th>
+                    <th class="actions-cell">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.filteredPipelines.map(pipeline => this.renderPipelineRow(pipeline))}
+                </tbody>
+              </table>
+            </div>
+          `}
     `;
   }
 
@@ -631,11 +632,16 @@ export class PipelineList extends LitElement {
 
     const stepColor = (stepPhase: string): string => {
       switch (stepPhase) {
-        case 'Succeeded': return 'green';
-        case 'Running': return 'cyan';
-        case 'Failed': return 'red';
-        case 'Skipped': return 'gray';
-        default: return 'gray';
+        case 'Succeeded':
+          return 'green';
+        case 'Running':
+          return 'cyan';
+        case 'Failed':
+          return 'red';
+        case 'Skipped':
+          return 'gray';
+        default:
+          return 'gray';
       }
     };
 
@@ -661,16 +667,23 @@ export class PipelineList extends LitElement {
         </td>
         <td>
           <div class="steps-inline">
-            ${mergedSteps.map(step => html`
-              <rh-tag compact color=${stepColor(step.phase)} class="${step.phase === 'Running' ? 'step-running' : ''}" title="${step.name}: ${step.phase}">
-                ${step.name}
-              </rh-tag>
-            `)}
+            ${mergedSteps.map(
+              step => html`
+                <rh-tag
+                  compact
+                  color=${stepColor(step.phase)}
+                  class="${step.phase === 'Running' ? 'step-running' : ''}"
+                  title="${step.name}: ${step.phase}"
+                >
+                  ${step.name}
+                </rh-tag>
+              `
+            )}
           </div>
         </td>
         <td>
           <span class="created-time">
-            ${pipeline.metadata.creationTimestamp 
+            ${pipeline.metadata.creationTimestamp
               ? this.formatTime(pipeline.metadata.creationTimestamp)
               : '-'}
           </span>
@@ -685,18 +698,20 @@ export class PipelineList extends LitElement {
           >
             <rh-icon set="ui" icon="ellipsis-vertical"></rh-icon>
           </button>
-          ${this.openMenuId === pipeline.metadata.name ? html`
-            <div class="kebab-menu" role="menu">
-              <button
-                class="kebab-menu-item danger"
-                role="menuitem"
-                @click=${(e: Event) => this.deletePipeline(e, pipeline)}
-              >
-                <rh-icon set="ui" icon="trash"></rh-icon>
-                Delete
-              </button>
-            </div>
-          ` : ''}
+          ${this.openMenuId === pipeline.metadata.name
+            ? html`
+                <div class="kebab-menu" role="menu">
+                  <button
+                    class="kebab-menu-item danger"
+                    role="menuitem"
+                    @click=${(e: Event) => this.deletePipeline(e, pipeline)}
+                  >
+                    <rh-icon set="ui" icon="trash"></rh-icon>
+                    Delete
+                  </button>
+                </div>
+              `
+            : ''}
         </td>
       </tr>
     `;

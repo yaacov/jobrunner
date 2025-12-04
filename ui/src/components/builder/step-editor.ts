@@ -66,8 +66,8 @@ export class StepEditor extends LitElement {
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
     }
 
-    input[type="text"],
-    input[type="number"],
+    input[type='text'],
+    input[type='number'],
     textarea,
     select {
       width: 100%;
@@ -114,7 +114,8 @@ export class StepEditor extends LitElement {
       gap: var(--rh-space-sm, 8px);
       margin: var(--rh-space-lg, 24px) 0 var(--rh-space-md, 16px) 0;
       padding-block-end: var(--rh-space-sm, 8px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-end: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .section-header h4 {
@@ -222,7 +223,8 @@ export class StepEditor extends LitElement {
 
     .accordion-content {
       padding: var(--rh-space-md, 16px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .accordion-content .form-group {
@@ -297,7 +299,8 @@ export class StepEditor extends LitElement {
       gap: var(--rh-space-md, 16px);
       margin-block-start: var(--rh-space-xl, 32px);
       padding-block-start: var(--rh-space-lg, 24px);
-      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .secret-selector-row {
@@ -320,8 +323,12 @@ export class StepEditor extends LitElement {
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .secret-selector-row .icon-btn.loading rh-icon {
@@ -465,11 +472,11 @@ export class StepEditor extends LitElement {
 
     const container = this.getContainer();
     const command = container?.command || [];
-    
+
     // Check if command ends with -c (e.g., "sh -c" or "python -c")
     // In this case, the entire script should be a single argument
     const isScriptMode = command.length > 0 && command[command.length - 1] === '-c';
-    
+
     let args: string[];
     if (isScriptMode) {
       // For script mode, keep the entire text as a single argument (preserving newlines)
@@ -516,9 +523,9 @@ export class StepEditor extends LitElement {
 
     const containers = [...(this.step.jobSpec.template.spec.containers || [])];
     if (containers.length > 0) {
-      containers[0] = { 
-        ...containers[0], 
-        envFrom: envFrom.length > 0 ? envFrom : undefined 
+      containers[0] = {
+        ...containers[0],
+        envFrom: envFrom.length > 0 ? envFrom : undefined,
       };
     }
 
@@ -538,15 +545,12 @@ export class StepEditor extends LitElement {
 
   private addSecretEnvFrom(secretName: string) {
     if (!secretName) return;
-    
+
     const currentEnvFrom = this.getEnvFrom();
     // Check if already added
     if (currentEnvFrom.some(e => e.secretRef?.name === secretName)) return;
-    
-    const newEnvFrom: EnvFromSource[] = [
-      ...currentEnvFrom,
-      { secretRef: { name: secretName } }
-    ];
+
+    const newEnvFrom: EnvFromSource[] = [...currentEnvFrom, { secretRef: { name: secretName } }];
     this.updateEnvFrom(newEnvFrom);
   }
 
@@ -653,9 +657,9 @@ export class StepEditor extends LitElement {
           aria-describedby=${this.nameError ? 'name-error' : ''}
           aria-invalid=${this.nameError ? 'true' : 'false'}
         />
-        ${this.nameError ? html`
-          <div id="name-error" class="error-text" role="alert">${this.nameError}</div>
-        ` : ''}
+        ${this.nameError
+          ? html` <div id="name-error" class="error-text" role="alert">${this.nameError}</div> `
+          : ''}
       </div>
 
       <!-- Image -->
@@ -686,7 +690,9 @@ export class StepEditor extends LitElement {
       <div class="form-group flex-grow">
         <label for="step-args">
           ${this.isScriptMode() ? 'Script' : 'Arguments'}
-          <span class="label-optional">${this.isScriptMode() ? '(passed as single argument to -c)' : '(one per line)'}</span>
+          <span class="label-optional"
+            >${this.isScriptMode() ? '(passed as single argument to -c)' : '(one per line)'}</span
+          >
         </label>
         <textarea
           id="step-args"
@@ -702,32 +708,36 @@ export class StepEditor extends LitElement {
         <h4>Environment Variables</h4>
       </div>
       <div class="env-list">
-        ${envVars.map((env, index) => html`
-          <div class="env-row">
-            <input
-              type="text"
-              placeholder="Name"
-              .value=${env.name}
-              @input=${(e: Event) => this.updateEnvVar(index, 'name', (e.target as HTMLInputElement).value)}
-              aria-label="Variable name"
-            />
-            <input
-              type="text"
-              placeholder="Value"
-              .value=${env.value || ''}
-              @input=${(e: Event) => this.updateEnvVar(index, 'value', (e.target as HTMLInputElement).value)}
-              aria-label="Variable value"
-            />
-            <button
-              class="icon-btn danger"
-              @click=${() => this.removeEnvVar(index)}
-              title="Remove variable"
-              aria-label="Remove variable"
-            >
-              <rh-icon set="ui" icon="trash"></rh-icon>
-            </button>
-          </div>
-        `)}
+        ${envVars.map(
+          (env, index) => html`
+            <div class="env-row">
+              <input
+                type="text"
+                placeholder="Name"
+                .value=${env.name}
+                @input=${(e: Event) =>
+                  this.updateEnvVar(index, 'name', (e.target as HTMLInputElement).value)}
+                aria-label="Variable name"
+              />
+              <input
+                type="text"
+                placeholder="Value"
+                .value=${env.value || ''}
+                @input=${(e: Event) =>
+                  this.updateEnvVar(index, 'value', (e.target as HTMLInputElement).value)}
+                aria-label="Variable value"
+              />
+              <button
+                class="icon-btn danger"
+                @click=${() => this.removeEnvVar(index)}
+                title="Remove variable"
+                aria-label="Remove variable"
+              >
+                <rh-icon set="ui" icon="trash"></rh-icon>
+              </button>
+            </div>
+          `
+        )}
         <rh-button variant="secondary" @click=${this.addEnvVar}>
           <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
           Add Variable
@@ -735,198 +745,217 @@ export class StepEditor extends LitElement {
       </div>
 
       <!-- Conditional Execution -->
-      ${otherSteps.length > 0 ? html`
-        <div class="section-header">
-          <rh-icon set="ui" icon="link"></rh-icon>
-          <h4>Conditional Execution</h4>
-          <span class="label-optional">(optional)</span>
-        </div>
-        <div class="runif-section">
-          <div class="form-group">
-            <label>Run after these steps:</label>
-            <div class="checkbox-group">
-              ${otherSteps.map(stepName => html`
-                <label class="checkbox-label">
-                  <input
-                    type="checkbox"
-                    ?checked=${this.step?.runIf?.steps?.includes(stepName)}
-                    @change=${() => this.toggleRunIfStep(stepName)}
-                  />
-                  ${stepName}
-                </label>
-              `)}
+      ${otherSteps.length > 0
+        ? html`
+            <div class="section-header">
+              <rh-icon set="ui" icon="link"></rh-icon>
+              <h4>Conditional Execution</h4>
+              <span class="label-optional">(optional)</span>
             </div>
-          </div>
-
-          ${this.step.runIf?.steps?.length ? html`
-            <div class="form-group">
-              <label>Condition:</label>
-              <div class="radio-group">
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="condition"
-                    value="success"
-                    ?checked=${(this.step.runIf?.condition || 'success') === 'success'}
-                    @change=${() => this.updateRunIf('condition', 'success')}
-                  />
-                  On Success
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="condition"
-                    value="fail"
-                    ?checked=${this.step.runIf?.condition === 'fail'}
-                    @change=${() => this.updateRunIf('condition', 'fail')}
-                  />
-                  On Failure
-                </label>
+            <div class="runif-section">
+              <div class="form-group">
+                <label>Run after these steps:</label>
+                <div class="checkbox-group">
+                  ${otherSteps.map(
+                    stepName => html`
+                      <label class="checkbox-label">
+                        <input
+                          type="checkbox"
+                          ?checked=${this.step?.runIf?.steps?.includes(stepName)}
+                          @change=${() => this.toggleRunIfStep(stepName)}
+                        />
+                        ${stepName}
+                      </label>
+                    `
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label>Operator:</label>
-              <div class="radio-group">
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="operator"
-                    value="and"
-                    ?checked=${(this.step.runIf?.operator || 'and') === 'and'}
-                    @change=${() => this.updateRunIf('operator', 'and')}
-                  />
-                  ALL (AND)
-                </label>
-                <label class="radio-label">
-                  <input
-                    type="radio"
-                    name="operator"
-                    value="or"
-                    ?checked=${this.step.runIf?.operator === 'or'}
-                    @change=${() => this.updateRunIf('operator', 'or')}
-                  />
-                  ANY (OR)
-                </label>
-              </div>
+              ${this.step.runIf?.steps?.length
+                ? html`
+                    <div class="form-group">
+                      <label>Condition:</label>
+                      <div class="radio-group">
+                        <label class="radio-label">
+                          <input
+                            type="radio"
+                            name="condition"
+                            value="success"
+                            ?checked=${(this.step.runIf?.condition || 'success') === 'success'}
+                            @change=${() => this.updateRunIf('condition', 'success')}
+                          />
+                          On Success
+                        </label>
+                        <label class="radio-label">
+                          <input
+                            type="radio"
+                            name="condition"
+                            value="fail"
+                            ?checked=${this.step.runIf?.condition === 'fail'}
+                            @change=${() => this.updateRunIf('condition', 'fail')}
+                          />
+                          On Failure
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Operator:</label>
+                      <div class="radio-group">
+                        <label class="radio-label">
+                          <input
+                            type="radio"
+                            name="operator"
+                            value="and"
+                            ?checked=${(this.step.runIf?.operator || 'and') === 'and'}
+                            @change=${() => this.updateRunIf('operator', 'and')}
+                          />
+                          ALL (AND)
+                        </label>
+                        <label class="radio-label">
+                          <input
+                            type="radio"
+                            name="operator"
+                            value="or"
+                            ?checked=${this.step.runIf?.operator === 'or'}
+                            @change=${() => this.updateRunIf('operator', 'or')}
+                          />
+                          ANY (OR)
+                        </label>
+                      </div>
+                    </div>
+                  `
+                : ''}
             </div>
-          ` : ''}
-        </div>
-      ` : ''}
+          `
+        : ''}
 
       <!-- Advanced Settings -->
       <div class="accordion">
         <button
           class="accordion-header"
-          @click=${() => this.showAdvanced = !this.showAdvanced}
+          @click=${() => (this.showAdvanced = !this.showAdvanced)}
           aria-expanded=${this.showAdvanced}
         >
           <span class="chevron ${this.showAdvanced ? 'open' : ''}"></span>
           Advanced Settings
         </button>
 
-        ${this.showAdvanced ? html`
-          <div class="accordion-content">
-            <div class="form-group">
-              <label for="backoff-limit">Backoff Limit</label>
-              <input
-                type="number"
-                id="backoff-limit"
-                min="0"
-                .value=${String(this.step.jobSpec.backoffLimit ?? 6)}
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value) || 6;
-                  this.dispatchUpdate({
-                    jobSpec: { ...this.step!.jobSpec, backoffLimit: value },
-                  });
-                }}
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="active-deadline">Active Deadline (seconds)</label>
-              <input
-                type="number"
-                id="active-deadline"
-                min="0"
-                .value=${String(this.step.jobSpec.activeDeadlineSeconds || '')}
-                placeholder="No limit"
-                @input=${(e: Event) => {
-                  const value = parseInt((e.target as HTMLInputElement).value);
-                  this.dispatchUpdate({
-                    jobSpec: {
-                      ...this.step!.jobSpec,
-                      activeDeadlineSeconds: value || undefined,
-                    },
-                  });
-                }}
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="secret-envfrom">
-                Secret as Environment Variables
-                <span class="label-optional">(mount all keys from a secret)</span>
-              </label>
-              <div class="secret-selector-row">
-                ${this.loadingSecrets ? html`
-                  <select id="secret-envfrom" disabled>
-                    <option>Loading secrets...</option>
-                  </select>
-                ` : html`
-                  <select
-                    id="secret-envfrom"
-                    @change=${(e: Event) => {
-                      const value = (e.target as HTMLSelectElement).value;
-                      if (value) {
-                        this.addSecretEnvFrom(value);
-                        (e.target as HTMLSelectElement).value = '';
-                      }
+        ${this.showAdvanced
+          ? html`
+              <div class="accordion-content">
+                <div class="form-group">
+                  <label for="backoff-limit">Backoff Limit</label>
+                  <input
+                    type="number"
+                    id="backoff-limit"
+                    min="0"
+                    .value=${String(this.step.jobSpec.backoffLimit ?? 6)}
+                    @input=${(e: Event) => {
+                      const value = parseInt((e.target as HTMLInputElement).value) || 6;
+                      this.dispatchUpdate({
+                        jobSpec: { ...this.step!.jobSpec, backoffLimit: value },
+                      });
                     }}
-                  >
-                    <option value="">-- Select a secret to add --</option>
-                    ${this.availableSecrets
-                      .filter(s => !this.getEnvFrom().some(e => e.secretRef?.name === s.name))
-                      .map(secret => html`
-                        <option value=${secret.name}>
-                          ${secret.name} (${secret.keys.length} keys)
-                        </option>
-                      `)}
-                  </select>
-                `}
-                <button
-                  class="icon-btn ${this.loadingSecrets ? 'loading' : ''}"
-                  @click=${() => this.fetchSecrets()}
-                  title="Refresh secrets list"
-                  aria-label="Refresh secrets list"
-                  ?disabled=${this.loadingSecrets}
-                >
-                  <rh-icon set="ui" icon="sync"></rh-icon>
-                </button>
-              </div>
-              ${this.getEnvFrom().filter(e => e.secretRef).length > 0 ? html`
-                <div class="envfrom-list" style="margin-top: var(--rh-space-sm, 8px);">
-                  ${this.getEnvFrom()
-                    .filter(e => e.secretRef)
-                    .map(envFrom => html`
-                      <div class="envfrom-item">
-                        <rh-tag compact color="orange">sec</rh-tag>
-                        <span class="secret-name">${envFrom.secretRef!.name}</span>
-                        <button
-                          class="icon-btn danger"
-                          @click=${() => this.removeSecretEnvFrom(envFrom.secretRef!.name)}
-                          title="Remove secret"
-                          aria-label="Remove ${envFrom.secretRef!.name}"
-                        >
-                          <rh-icon set="ui" icon="trash"></rh-icon>
-                        </button>
-                      </div>
-                    `)}
+                  />
                 </div>
-              ` : ''}
-            </div>
-          </div>
-        ` : ''}
+
+                <div class="form-group">
+                  <label for="active-deadline">Active Deadline (seconds)</label>
+                  <input
+                    type="number"
+                    id="active-deadline"
+                    min="0"
+                    .value=${String(this.step.jobSpec.activeDeadlineSeconds || '')}
+                    placeholder="No limit"
+                    @input=${(e: Event) => {
+                      const value = parseInt((e.target as HTMLInputElement).value);
+                      this.dispatchUpdate({
+                        jobSpec: {
+                          ...this.step!.jobSpec,
+                          activeDeadlineSeconds: value || undefined,
+                        },
+                      });
+                    }}
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="secret-envfrom">
+                    Secret as Environment Variables
+                    <span class="label-optional">(mount all keys from a secret)</span>
+                  </label>
+                  <div class="secret-selector-row">
+                    ${this.loadingSecrets
+                      ? html`
+                          <select id="secret-envfrom" disabled>
+                            <option>Loading secrets...</option>
+                          </select>
+                        `
+                      : html`
+                          <select
+                            id="secret-envfrom"
+                            @change=${(e: Event) => {
+                              const value = (e.target as HTMLSelectElement).value;
+                              if (value) {
+                                this.addSecretEnvFrom(value);
+                                (e.target as HTMLSelectElement).value = '';
+                              }
+                            }}
+                          >
+                            <option value="">-- Select a secret to add --</option>
+                            ${this.availableSecrets
+                              .filter(
+                                s => !this.getEnvFrom().some(e => e.secretRef?.name === s.name)
+                              )
+                              .map(
+                                secret => html`
+                                  <option value=${secret.name}>
+                                    ${secret.name} (${secret.keys.length} keys)
+                                  </option>
+                                `
+                              )}
+                          </select>
+                        `}
+                    <button
+                      class="icon-btn ${this.loadingSecrets ? 'loading' : ''}"
+                      @click=${() => this.fetchSecrets()}
+                      title="Refresh secrets list"
+                      aria-label="Refresh secrets list"
+                      ?disabled=${this.loadingSecrets}
+                    >
+                      <rh-icon set="ui" icon="sync"></rh-icon>
+                    </button>
+                  </div>
+                  ${this.getEnvFrom().filter(e => e.secretRef).length > 0
+                    ? html`
+                        <div class="envfrom-list" style="margin-top: var(--rh-space-sm, 8px);">
+                          ${this.getEnvFrom()
+                            .filter(e => e.secretRef)
+                            .map(
+                              envFrom => html`
+                                <div class="envfrom-item">
+                                  <rh-tag compact color="orange">sec</rh-tag>
+                                  <span class="secret-name">${envFrom.secretRef!.name}</span>
+                                  <button
+                                    class="icon-btn danger"
+                                    @click=${() =>
+                                      this.removeSecretEnvFrom(envFrom.secretRef!.name)}
+                                    title="Remove secret"
+                                    aria-label="Remove ${envFrom.secretRef!.name}"
+                                  >
+                                    <rh-icon set="ui" icon="trash"></rh-icon>
+                                  </button>
+                                </div>
+                              `
+                            )}
+                        </div>
+                      `
+                    : ''}
+                </div>
+              </div>
+            `
+          : ''}
       </div>
 
       <!-- Actions -->
