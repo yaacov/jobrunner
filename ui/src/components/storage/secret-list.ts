@@ -19,12 +19,16 @@ interface KeyValuePair {
   revealed: boolean;
 }
 
+type SortDirection = 'asc' | 'desc';
+
 @customElement('secret-list')
 export class SecretList extends LitElement {
   @state() private secrets: Secret[] = [];
   @state() private loading = true;
   @state() private error: string | null = null;
   @state() private namespace = 'default';
+  @state() private searchQuery = '';
+  @state() private sortDirection: SortDirection = 'asc';
 
   // Create modal state
   @state() private showCreateModal = false;
@@ -75,6 +79,26 @@ export class SecretList extends LitElement {
       align-items: center;
     }
 
+    .search-input {
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      padding-inline-start: var(--rh-space-xl, 32px);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      font-size: var(--rh-font-size-body-text-md, 1rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      min-width: 200px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a6e73' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: var(--rh-space-sm, 8px) center;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--rh-color-interactive-blue-darker, #0066cc);
+      box-shadow: 0 0 0 1px var(--rh-color-interactive-blue-darker, #0066cc);
+    }
+
     .secret-table-container {
       background: var(--rh-color-surface-lightest, #ffffff);
       border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
@@ -100,6 +124,27 @@ export class SecretList extends LitElement {
       font-size: var(--rh-font-size-body-text-sm, 0.875rem);
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
       white-space: nowrap;
+    }
+
+    .secret-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 150ms ease;
+    }
+
+    .secret-table th.sortable:hover {
+      background: var(--rh-color-surface-light, #e0e0e0);
+    }
+
+    .secret-table th.sortable .sort-header {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--rh-space-xs, 4px);
+    }
+
+    .secret-table th.sortable rh-icon {
+      --rh-icon-size: 14px;
+      opacity: 0.7;
     }
 
     .secret-table tbody tr {
@@ -585,6 +630,28 @@ export class SecretList extends LitElement {
     }
   }
 
+  private get filteredSecrets(): Secret[] {
+    let result = this.secrets;
+
+    // Filter by search query
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      result = result.filter(s => s.metadata.name.toLowerCase().includes(query));
+    }
+
+    // Sort by name
+    result = [...result].sort((a, b) => {
+      const comparison = a.metadata.name.localeCompare(b.metadata.name);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }
+
+  private toggleSort() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  }
+
   // Create modal methods
   private openCreateModal() {
     this.showCreateModal = true;
@@ -831,6 +898,14 @@ export class SecretList extends LitElement {
       <div class="header">
         <h1>Secrets</h1>
         <div class="controls">
+          <input
+            type="search"
+            class="search-input"
+            placeholder="Search secrets..."
+            .value=${this.searchQuery}
+            @input=${(e: Event) => (this.searchQuery = (e.target as HTMLInputElement).value)}
+            aria-label="Search secrets"
+          />
           <rh-button @click=${this.openCreateModal}>
             <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
             Create Secret
@@ -838,22 +913,30 @@ export class SecretList extends LitElement {
         </div>
       </div>
 
-      ${this.secrets.length === 0
+      ${this.filteredSecrets.length === 0
         ? html`
             <div class="empty-state">
               <rh-icon set="ui" icon="lock"></rh-icon>
-              <h3>No secrets found</h3>
-              <p>Create a secret to store sensitive data.</p>
-              <rh-cta>
-                <a
-                  href="#"
-                  @click=${(e: Event) => {
-                    e.preventDefault();
-                    this.openCreateModal();
-                  }}
-                  >Create Secret</a
-                >
-              </rh-cta>
+              <h3>${this.searchQuery ? 'No matching secrets' : 'No secrets found'}</h3>
+              <p>
+                ${this.searchQuery
+                  ? 'Try adjusting your search query.'
+                  : 'Create a secret to store sensitive data.'}
+              </p>
+              ${!this.searchQuery
+                ? html`
+                    <rh-cta>
+                      <a
+                        href="#"
+                        @click=${(e: Event) => {
+                          e.preventDefault();
+                          this.openCreateModal();
+                        }}
+                        >Create Secret</a
+                      >
+                    </rh-cta>
+                  `
+                : ''}
             </div>
           `
         : html`
@@ -861,7 +944,15 @@ export class SecretList extends LitElement {
               <table class="secret-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
+                    <th class="sortable" @click=${this.toggleSort}>
+                      <span class="sort-header">
+                        Name
+                        <rh-icon
+                          set="ui"
+                          icon="${this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
+                        ></rh-icon>
+                      </span>
+                    </th>
                     <th>Type</th>
                     <th>Keys</th>
                     <th>Created</th>
@@ -869,7 +960,7 @@ export class SecretList extends LitElement {
                   </tr>
                 </thead>
                 <tbody>
-                  ${this.secrets.map(secret => this.renderSecretRow(secret))}
+                  ${this.filteredSecrets.map(secret => this.renderSecretRow(secret))}
                 </tbody>
               </table>
             </div>

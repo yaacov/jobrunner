@@ -23,6 +23,8 @@ interface StorageClass {
   provisioner: string;
 }
 
+type SortDirection = 'asc' | 'desc';
+
 @customElement('pvc-list')
 export class PVCList extends LitElement {
   @state() private pvcs: PVC[] = [];
@@ -33,6 +35,8 @@ export class PVCList extends LitElement {
   @state() private showCreateModal = false;
   @state() private creating = false;
   @state() private createError: string | null = null;
+  @state() private searchQuery = '';
+  @state() private sortDirection: SortDirection = 'asc';
 
   // Create form state
   @state() private newPvcName = '';
@@ -72,6 +76,26 @@ export class PVCList extends LitElement {
       align-items: center;
     }
 
+    .search-input {
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      padding-inline-start: var(--rh-space-xl, 32px);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      font-size: var(--rh-font-size-body-text-md, 1rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      min-width: 200px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a6e73' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: var(--rh-space-sm, 8px) center;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--rh-color-interactive-blue-darker, #0066cc);
+      box-shadow: 0 0 0 1px var(--rh-color-interactive-blue-darker, #0066cc);
+    }
+
     .pvc-table-container {
       background: var(--rh-color-surface-lightest, #ffffff);
       border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
@@ -97,6 +121,27 @@ export class PVCList extends LitElement {
       font-size: var(--rh-font-size-body-text-sm, 0.875rem);
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
       white-space: nowrap;
+    }
+
+    .pvc-table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 150ms ease;
+    }
+
+    .pvc-table th.sortable:hover {
+      background: var(--rh-color-surface-light, #e0e0e0);
+    }
+
+    .pvc-table th.sortable .sort-header {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--rh-space-xs, 4px);
+    }
+
+    .pvc-table th.sortable rh-icon {
+      --rh-icon-size: 14px;
+      opacity: 0.7;
     }
 
     .pvc-table tbody tr:last-child td {
@@ -426,6 +471,28 @@ export class PVCList extends LitElement {
     }
   }
 
+  private get filteredPVCs(): PVC[] {
+    let result = this.pvcs;
+
+    // Filter by search query
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      result = result.filter(p => p.metadata.name.toLowerCase().includes(query));
+    }
+
+    // Sort by name
+    result = [...result].sort((a, b) => {
+      const comparison = a.metadata.name.localeCompare(b.metadata.name);
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }
+
+  private toggleSort() {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  }
+
   private openCreateModal() {
     this.showCreateModal = true;
     this.createError = null;
@@ -519,6 +586,14 @@ export class PVCList extends LitElement {
       <div class="header">
         <h1>Persistent Volume Claims</h1>
         <div class="controls">
+          <input
+            type="search"
+            class="search-input"
+            placeholder="Search PVCs..."
+            .value=${this.searchQuery}
+            @input=${(e: Event) => (this.searchQuery = (e.target as HTMLInputElement).value)}
+            aria-label="Search PVCs"
+          />
           <rh-button @click=${this.openCreateModal}>
             <rh-icon set="ui" icon="add-circle" slot="icon"></rh-icon>
             Create PVC
@@ -526,22 +601,30 @@ export class PVCList extends LitElement {
         </div>
       </div>
 
-      ${this.pvcs.length === 0
+      ${this.filteredPVCs.length === 0
         ? html`
             <div class="empty-state">
               <rh-icon set="standard" icon="data-science"></rh-icon>
-              <h3>No PVCs found</h3>
-              <p>Create a persistent volume claim to store data.</p>
-              <rh-cta>
-                <a
-                  href="#"
-                  @click=${(e: Event) => {
-                    e.preventDefault();
-                    this.openCreateModal();
-                  }}
-                  >Create PVC</a
-                >
-              </rh-cta>
+              <h3>${this.searchQuery ? 'No matching PVCs' : 'No PVCs found'}</h3>
+              <p>
+                ${this.searchQuery
+                  ? 'Try adjusting your search query.'
+                  : 'Create a persistent volume claim to store data.'}
+              </p>
+              ${!this.searchQuery
+                ? html`
+                    <rh-cta>
+                      <a
+                        href="#"
+                        @click=${(e: Event) => {
+                          e.preventDefault();
+                          this.openCreateModal();
+                        }}
+                        >Create PVC</a
+                      >
+                    </rh-cta>
+                  `
+                : ''}
             </div>
           `
         : html`
@@ -549,7 +632,15 @@ export class PVCList extends LitElement {
               <table class="pvc-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
+                    <th class="sortable" @click=${this.toggleSort}>
+                      <span class="sort-header">
+                        Name
+                        <rh-icon
+                          set="ui"
+                          icon="${this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}"
+                        ></rh-icon>
+                      </span>
+                    </th>
                     <th>Status</th>
                     <th>Size</th>
                     <th>Access Mode</th>
@@ -560,7 +651,7 @@ export class PVCList extends LitElement {
                   </tr>
                 </thead>
                 <tbody>
-                  ${this.pvcs.map(pvc => this.renderPVCRow(pvc))}
+                  ${this.filteredPVCs.map(pvc => this.renderPVCRow(pvc))}
                 </tbody>
               </table>
             </div>
