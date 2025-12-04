@@ -5,6 +5,7 @@
 
 import { LitElement, html, css, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { stringify as yamlStringify } from 'yaml';
 import type {
   Pipeline,
   StepStatus,
@@ -367,20 +368,12 @@ export class PipelineDetail extends LitElement {
     .yaml-container {
       width: 100%;
       max-width: 100%;
-      overflow-x: auto;
       box-sizing: border-box;
     }
 
-    .yaml-container rh-code-block {
+    .yaml-container code-editor {
       display: block;
       width: 100%;
-      max-width: 100%;
-    }
-
-    .yaml-container rh-code-block::part(container),
-    .yaml-container rh-code-block::part(code) {
-      width: 100%;
-      max-width: 100%;
     }
 
     .loading-container,
@@ -965,16 +958,23 @@ export class PipelineDetail extends LitElement {
   private renderYaml() {
     if (!this.pipeline) return '';
 
-    // Simple YAML-like display (JSON formatted)
-    const yaml = JSON.stringify(this.pipeline, null, 2);
+    // Convert to properly formatted YAML
+    const yamlContent = yamlStringify(this.pipeline, {
+      indent: 2,
+      lineWidth: 0, // Don't wrap lines
+      defaultKeyType: 'PLAIN',
+      defaultStringType: 'QUOTE_DOUBLE',
+    });
 
     return html`
       <div class="yaml-container">
-        <rh-code-block>
-          <script type="application/json">
-            ${yaml}
-          </script>
-        </rh-code-block>
+        <code-editor
+          .value=${yamlContent}
+          language="yaml"
+          .readonly=${true}
+          .showLanguageSelector=${false}
+          minHeight="400px"
+        ></code-editor>
       </div>
     `;
   }

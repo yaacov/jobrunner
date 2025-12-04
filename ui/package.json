@@ -22,6 +22,7 @@
     "@codemirror/view": "^6.35.0",
     "@codemirror/legacy-modes": "^6.4.2",
     "@rhds/elements": "^4.0.0",
+    "yaml": "^2.6.1",
     "@rhds/icons": "^2.0.0",
     "@rhds/tokens": "^3.0.0",
     "codemirror": "^6.0.1",
