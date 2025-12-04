@@ -13,9 +13,18 @@
     "format:check": "bunx prettier --check \"src/**/*.{ts,js,css,html}\""
   },
   "dependencies": {
+    "@codemirror/commands": "^6.7.1",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/lang-python": "^6.1.6",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/language": "^6.10.6",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/view": "^6.35.0",
+    "@codemirror/legacy-modes": "^6.4.2",
     "@rhds/elements": "^4.0.0",
     "@rhds/icons": "^2.0.0",
     "@rhds/tokens": "^3.0.0",
+    "codemirror": "^6.0.1",
     "elkjs": "^0.9.3",
     "lit": "^3.2.1"
   },

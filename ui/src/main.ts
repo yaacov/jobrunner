@@ -38,6 +38,7 @@ RhIcon.resolve = async (set: string, icon: string): Promise<Node> => {
 import './components/app-shell.js';
 import './components/shared/status-badge.js';
 import './components/shared/side-drawer.js';
+import './components/shared/code-editor.js';
 import './components/monitor/pipeline-list.js';
 import './components/monitor/pipeline-detail.js';
 import './components/monitor/step-detail.js';

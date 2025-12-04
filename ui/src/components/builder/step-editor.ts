@@ -8,6 +8,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { PipelineStep, EnvVar, EnvFromSource } from '../../types/pipeline.js';
 import { validateStepName } from '../../lib/graph-layout.js';
 import { k8sClient } from '../../lib/k8s-client.js';
+import type { EditorLanguage } from '../shared/code-editor.js';
 
 interface SecretInfo {
   name: string;
@@ -24,6 +25,7 @@ export class StepEditor extends LitElement {
   @state() private showAdvanced = false;
   @state() private availableSecrets: SecretInfo[] = [];
   @state() private loadingSecrets = false;
+  @state() private editorLanguage: EditorLanguage = 'bash';
 
   static styles = css`
     :host {
@@ -374,6 +376,13 @@ export class StepEditor extends LitElement {
     window.removeEventListener('namespace-change', this.handleNamespaceChange);
   }
 
+  updated(changedProperties: Map<string, unknown>) {
+    // Auto-detect language when step changes
+    if (changedProperties.has('step') && this.step) {
+      this.editorLanguage = this.detectLanguageFromCommand();
+    }
+  }
+
   private handleNamespaceChange = ((e: CustomEvent) => {
     this.namespace = e.detail.namespace;
     this.fetchSecrets();
@@ -405,6 +414,26 @@ export class StepEditor extends LitElement {
   private isScriptMode(): boolean {
     const command = this.getContainer()?.command || [];
     return command.length > 0 && command[command.length - 1] === '-c';
+  }
+
+  private detectLanguageFromCommand(): EditorLanguage {
+    const command = this.getContainer()?.command || [];
+    const commandStr = command.join(' ').toLowerCase();
+
+    if (commandStr.includes('python')) return 'python';
+    if (commandStr.includes('node') || commandStr.includes('javascript')) return 'javascript';
+    if (
+      commandStr.includes('sh') ||
+      commandStr.includes('bash') ||
+      commandStr.includes('kubectl')
+    )
+      return 'bash';
+
+    return 'bash'; // Default to bash
+  }
+
+  private handleEditorLanguageChange(e: CustomEvent) {
+    this.editorLanguage = e.detail.language;
   }
 
   private dispatchUpdate(updates: Partial<PipelineStep>) {
@@ -694,12 +723,14 @@ export class StepEditor extends LitElement {
             >${this.isScriptMode() ? '(passed as single argument to -c)' : '(one per line)'}</span
           >
         </label>
-        <textarea
-          id="step-args"
+        <code-editor
           .value=${args}
-          @input=${(e: Event) => this.updateArgs((e.target as HTMLTextAreaElement).value)}
-          placeholder=${this.isScriptMode() ? 'echo "Hello World"\necho "Line 2"' : 'arg1\narg2'}
-        ></textarea>
+          .language=${this.editorLanguage}
+          .showLanguageSelector=${this.isScriptMode()}
+          .minHeight=${'200px'}
+          @change=${(e: CustomEvent) => this.updateArgs(e.detail.value)}
+          @language-change=${this.handleEditorLanguageChange}
+        ></code-editor>
       </div>
 
       <!-- Environment Variables -->
