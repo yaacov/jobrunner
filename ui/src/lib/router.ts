@@ -189,6 +189,8 @@ export function initRouter(outlet: HTMLElement): void {
     { path: '/monitor/:namespace/:name', component: 'pipeline-detail' },
     { path: '/builder', component: 'pipeline-canvas' },
     { path: '/builder/:namespace/:name', component: 'pipeline-canvas' },
+    { path: '/storage', component: 'pvc-list' },
+    { path: '/secrets', component: 'secret-list' },
   ]);
 
   router.init(outlet);

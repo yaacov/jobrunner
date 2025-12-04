@@ -44,6 +44,8 @@ import './components/monitor/step-detail.js';
 import './components/builder/pipeline-canvas.js';
 import './components/builder/step-editor.js';
 import './components/builder/global-settings.js';
+import './components/storage/pvc-list.js';
+import './components/storage/secret-list.js';
 
 // ============================================
 // Router Setup

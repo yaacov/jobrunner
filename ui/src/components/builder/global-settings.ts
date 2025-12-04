@@ -6,12 +6,21 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Pipeline, EnvVar } from '../../types/pipeline.js';
+import { k8sClient } from '../../lib/k8s-client.js';
+
+interface PVCInfo {
+  name: string;
+  storage?: string;
+  phase: string;
+}
 
 @customElement('global-settings')
 export class GlobalSettings extends LitElement {
   @property({ type: Object }) pipeline?: Pipeline;
 
   @state() private activeTab = 0;
+  @state() private availablePVCs: PVCInfo[] = [];
+  @state() private loadingPVCs = false;
 
   static styles = css`
     :host {
@@ -162,7 +171,65 @@ export class GlobalSettings extends LitElement {
       vertical-align: middle;
       margin-inline-end: var(--rh-space-xs, 4px);
     }
+
+    .pvc-selector-row {
+      display: flex;
+      gap: var(--rh-space-sm, 8px);
+      align-items: stretch;
+    }
+
+    .pvc-selector-row select,
+    .pvc-selector-row input {
+      flex: 1;
+    }
+
+    .pvc-selector-row .icon-btn {
+      flex-shrink: 0;
+    }
+
+    .pvc-selector-row .icon-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .pvc-selector-row .icon-btn.loading rh-icon {
+      animation: spin 1s linear infinite;
+    }
   `;
+
+  private lastFetchedNamespace = '';
+
+  updated(changedProperties: Map<string, unknown>) {
+    super.updated(changedProperties);
+    // Fetch PVCs when switching to volume tab or when namespace changes
+    const namespace = this.pipeline?.metadata.namespace || 'default';
+    if (this.activeTab === 2 && namespace !== this.lastFetchedNamespace) {
+      this.fetchPVCs(namespace);
+    }
+  }
+
+  private async fetchPVCs(namespace: string) {
+    this.loadingPVCs = true;
+    this.lastFetchedNamespace = namespace;
+    try {
+      const pvcs = await k8sClient.listPVCs(namespace);
+      this.availablePVCs = pvcs.map(pvc => ({
+        name: pvc.metadata.name,
+        storage: pvc.spec.resources?.requests?.storage,
+        phase: pvc.status.phase,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch PVCs:', error);
+      this.availablePVCs = [];
+    } finally {
+      this.loadingPVCs = false;
+    }
+  }
 
   private dispatchUpdate() {
     this.dispatchEvent(new CustomEvent('update', {
@@ -499,17 +566,55 @@ export class GlobalSettings extends LitElement {
         ${sharedVolume?.persistentVolumeClaim !== undefined ? html`
           <div class="form-group">
             <label for="pvc-name">PVC Name</label>
-            <input
-              type="text"
-              id="pvc-name"
-              .value=${sharedVolume.persistentVolumeClaim?.claimName || ''}
-              placeholder="my-pvc"
-              @input=${(e: Event) => {
-                this.updateSharedVolume('persistentVolumeClaim', {
-                  claimName: (e.target as HTMLInputElement).value,
-                });
-              }}
-            />
+            <div class="pvc-selector-row">
+              ${this.loadingPVCs ? html`
+                <select id="pvc-name" disabled>
+                  <option>Loading PVCs...</option>
+                </select>
+              ` : this.availablePVCs.length > 0 ? html`
+                <select
+                  id="pvc-name"
+                  @change=${(e: Event) => {
+                    this.updateSharedVolume('persistentVolumeClaim', {
+                      claimName: (e.target as HTMLSelectElement).value,
+                    });
+                  }}
+                >
+                  <option value="" ?selected=${!sharedVolume.persistentVolumeClaim?.claimName}>
+                    -- Select a PVC --
+                  </option>
+                  ${this.availablePVCs.map(pvc => html`
+                    <option
+                      value=${pvc.name}
+                      ?selected=${sharedVolume.persistentVolumeClaim?.claimName === pvc.name}
+                    >
+                      ${pvc.name}${pvc.storage ? ` (${pvc.storage})` : ''}${pvc.phase !== 'Bound' ? ` [${pvc.phase}]` : ''}
+                    </option>
+                  `)}
+                </select>
+              ` : html`
+                <input
+                  type="text"
+                  id="pvc-name"
+                  .value=${sharedVolume.persistentVolumeClaim?.claimName || ''}
+                  placeholder="No PVCs found - enter name manually"
+                  @input=${(e: Event) => {
+                    this.updateSharedVolume('persistentVolumeClaim', {
+                      claimName: (e.target as HTMLInputElement).value,
+                    });
+                  }}
+                />
+              `}
+              <button
+                class="icon-btn ${this.loadingPVCs ? 'loading' : ''}"
+                @click=${() => this.fetchPVCs(this.pipeline?.metadata.namespace || 'default')}
+                title="Refresh PVC list"
+                aria-label="Refresh PVC list"
+                ?disabled=${this.loadingPVCs}
+              >
+                <rh-icon set="ui" icon="sync"></rh-icon>
+              </button>
+            </div>
           </div>
         ` : ''}
       ` : ''}

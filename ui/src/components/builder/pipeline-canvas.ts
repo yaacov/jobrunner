@@ -814,6 +814,7 @@ export class PipelineCanvas extends LitElement {
           <step-editor
             .step=${this.canvasSteps.find(s => s.name === this.selectedStep)}
             .allSteps=${this.canvasSteps.map(s => s.name)}
+            .namespace=${this.pipeline.metadata.namespace || 'default'}
             @update=${(e: CustomEvent) => this.updateStep(this.selectedStep!, e.detail)}
             @delete=${() => { this.removeStep(this.selectedStep!); this.closeDrawer(); }}
             @close=${this.closeDrawer}

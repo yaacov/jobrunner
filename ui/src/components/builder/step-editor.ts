@@ -5,16 +5,25 @@
 
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { PipelineStep, EnvVar } from '../../types/pipeline.js';
+import type { PipelineStep, EnvVar, EnvFromSource } from '../../types/pipeline.js';
 import { validateStepName } from '../../lib/graph-layout.js';
+import { k8sClient } from '../../lib/k8s-client.js';
+
+interface SecretInfo {
+  name: string;
+  keys: string[];
+}
 
 @customElement('step-editor')
 export class StepEditor extends LitElement {
   @property({ type: Object }) step?: PipelineStep;
   @property({ type: Array }) allSteps: string[] = [];
+  @property({ type: String }) namespace = 'default';
 
   @state() private nameError: string | null = null;
   @state() private showAdvanced = false;
+  @state() private availableSecrets: SecretInfo[] = [];
+  @state() private loadingSecrets = false;
 
   static styles = css`
     :host {
@@ -290,7 +299,97 @@ export class StepEditor extends LitElement {
       padding-block-start: var(--rh-space-lg, 24px);
       border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
+
+    .secret-selector-row {
+      display: flex;
+      gap: var(--rh-space-sm, 8px);
+      align-items: stretch;
+    }
+
+    .secret-selector-row select {
+      flex: 1;
+    }
+
+    .secret-selector-row .icon-btn {
+      flex-shrink: 0;
+    }
+
+    .secret-selector-row .icon-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .secret-selector-row .icon-btn.loading rh-icon {
+      animation: spin 1s linear infinite;
+    }
+
+    .envfrom-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--rh-space-sm, 8px);
+    }
+
+    .envfrom-item {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
+      padding: var(--rh-space-sm, 8px);
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+      border-radius: var(--rh-border-radius-default, 3px);
+    }
+
+    .envfrom-item rh-tag {
+      font-family: var(--rh-font-family-code, 'Red Hat Mono', monospace);
+    }
+
+    .envfrom-item .secret-name {
+      flex: 1;
+      font-family: var(--rh-font-family-code, 'Red Hat Mono', monospace);
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+    }
   `;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.fetchSecrets();
+
+    // Listen for namespace changes
+    window.addEventListener('namespace-change', this.handleNamespaceChange);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('namespace-change', this.handleNamespaceChange);
+  }
+
+  private handleNamespaceChange = ((e: CustomEvent) => {
+    this.namespace = e.detail.namespace;
+    this.fetchSecrets();
+  }) as EventListener;
+
+  private async fetchSecrets() {
+    this.loadingSecrets = true;
+    try {
+      const secrets = await k8sClient.listSecrets(this.namespace);
+      // Only show Opaque secrets (user-created, not system secrets)
+      this.availableSecrets = secrets
+        .filter(s => s.type === 'Opaque')
+        .map(s => ({
+          name: s.metadata.name,
+          keys: s.data ? Object.keys(s.data) : [],
+        }));
+    } catch (error) {
+      console.error('Failed to fetch secrets:', error);
+      this.availableSecrets = [];
+    } finally {
+      this.loadingSecrets = false;
+    }
+  }
 
   private getContainer() {
     return this.step?.jobSpec.template.spec.containers[0];
@@ -406,6 +505,55 @@ export class StepEditor extends LitElement {
 
   private getEnvVars(): EnvVar[] {
     return this.getContainer()?.env || [];
+  }
+
+  private getEnvFrom(): EnvFromSource[] {
+    return this.getContainer()?.envFrom || [];
+  }
+
+  private updateEnvFrom(envFrom: EnvFromSource[]) {
+    if (!this.step) return;
+
+    const containers = [...(this.step.jobSpec.template.spec.containers || [])];
+    if (containers.length > 0) {
+      containers[0] = { 
+        ...containers[0], 
+        envFrom: envFrom.length > 0 ? envFrom : undefined 
+      };
+    }
+
+    this.dispatchUpdate({
+      jobSpec: {
+        ...this.step.jobSpec,
+        template: {
+          ...this.step.jobSpec.template,
+          spec: {
+            ...this.step.jobSpec.template.spec,
+            containers,
+          },
+        },
+      },
+    });
+  }
+
+  private addSecretEnvFrom(secretName: string) {
+    if (!secretName) return;
+    
+    const currentEnvFrom = this.getEnvFrom();
+    // Check if already added
+    if (currentEnvFrom.some(e => e.secretRef?.name === secretName)) return;
+    
+    const newEnvFrom: EnvFromSource[] = [
+      ...currentEnvFrom,
+      { secretRef: { name: secretName } }
+    ];
+    this.updateEnvFrom(newEnvFrom);
+  }
+
+  private removeSecretEnvFrom(secretName: string) {
+    const currentEnvFrom = this.getEnvFrom();
+    const newEnvFrom = currentEnvFrom.filter(e => e.secretRef?.name !== secretName);
+    this.updateEnvFrom(newEnvFrom);
   }
 
   private updateEnvVars(envVars: EnvVar[]) {
@@ -713,6 +861,69 @@ export class StepEditor extends LitElement {
                   });
                 }}
               />
+            </div>
+
+            <div class="form-group">
+              <label for="secret-envfrom">
+                Secret as Environment Variables
+                <span class="label-optional">(mount all keys from a secret)</span>
+              </label>
+              <div class="secret-selector-row">
+                ${this.loadingSecrets ? html`
+                  <select id="secret-envfrom" disabled>
+                    <option>Loading secrets...</option>
+                  </select>
+                ` : html`
+                  <select
+                    id="secret-envfrom"
+                    @change=${(e: Event) => {
+                      const value = (e.target as HTMLSelectElement).value;
+                      if (value) {
+                        this.addSecretEnvFrom(value);
+                        (e.target as HTMLSelectElement).value = '';
+                      }
+                    }}
+                  >
+                    <option value="">-- Select a secret to add --</option>
+                    ${this.availableSecrets
+                      .filter(s => !this.getEnvFrom().some(e => e.secretRef?.name === s.name))
+                      .map(secret => html`
+                        <option value=${secret.name}>
+                          ${secret.name} (${secret.keys.length} keys)
+                        </option>
+                      `)}
+                  </select>
+                `}
+                <button
+                  class="icon-btn ${this.loadingSecrets ? 'loading' : ''}"
+                  @click=${() => this.fetchSecrets()}
+                  title="Refresh secrets list"
+                  aria-label="Refresh secrets list"
+                  ?disabled=${this.loadingSecrets}
+                >
+                  <rh-icon set="ui" icon="sync"></rh-icon>
+                </button>
+              </div>
+              ${this.getEnvFrom().filter(e => e.secretRef).length > 0 ? html`
+                <div class="envfrom-list" style="margin-top: var(--rh-space-sm, 8px);">
+                  ${this.getEnvFrom()
+                    .filter(e => e.secretRef)
+                    .map(envFrom => html`
+                      <div class="envfrom-item">
+                        <rh-tag compact color="orange">sec</rh-tag>
+                        <span class="secret-name">${envFrom.secretRef!.name}</span>
+                        <button
+                          class="icon-btn danger"
+                          @click=${() => this.removeSecretEnvFrom(envFrom.secretRef!.name)}
+                          title="Remove secret"
+                          aria-label="Remove ${envFrom.secretRef!.name}"
+                        >
+                          <rh-icon set="ui" icon="trash"></rh-icon>
+                        </button>
+                      </div>
+                    `)}
+                </div>
+              ` : ''}
             </div>
           </div>
         ` : ''}

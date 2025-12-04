@@ -253,6 +253,22 @@ export class AppShell extends LitElement {
                 <rh-icon set="ui" icon="build" loading="eager"></rh-icon>
                 Builder
               </rh-navigation-link>
+              <rh-navigation-link
+                href="/storage"
+                ?current-page=${this.isActive('/storage')}
+                @click=${(e: Event) => this.handleNavClick(e, '/storage')}
+              >
+                <rh-icon set="ui" icon="data" loading="eager"></rh-icon>
+                Storage
+              </rh-navigation-link>
+              <rh-navigation-link
+                href="/secrets"
+                ?current-page=${this.isActive('/secrets')}
+                @click=${(e: Event) => this.handleNavClick(e, '/secrets')}
+              >
+                <rh-icon set="ui" icon="lock" loading="eager"></rh-icon>
+                Secrets
+              </rh-navigation-link>
             </rh-navigation-vertical>
           </div>
         </aside>
