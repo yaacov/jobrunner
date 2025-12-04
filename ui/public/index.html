@@ -105,6 +105,38 @@
     rh-card {
       display: block;
     }
+
+    /* Remove blue focus outline from RHDS tab components */
+    rh-tabs,
+    rh-tab,
+    rh-tab-panel {
+      outline: none !important;
+    }
+
+    rh-tabs:focus,
+    rh-tabs:focus-visible,
+    rh-tabs:focus-within,
+    rh-tab:focus,
+    rh-tab:focus-visible,
+    rh-tab:focus-within,
+    rh-tab-panel:focus,
+    rh-tab-panel:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Override RHDS focus styling via CSS custom properties */
+    rh-tabs {
+      --rh-tabs-link-focus-outline: none;
+      --rh-tabs-focus-outline-color: transparent;
+      --rh-tabs-focus-outline-width: 0;
+    }
+
+    rh-tab {
+      --rh-tab-focus-outline: none;
+      --rh-focus-outline-color: transparent;
+      --rh-focus-outline-width: 0;
+    }
   </style>
 </head>
 <body>

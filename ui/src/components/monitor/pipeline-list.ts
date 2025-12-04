@@ -21,6 +21,7 @@ export class PipelineList extends LitElement {
   @state() private namespace = 'default';
   @state() private sortColumn: SortColumn = 'created';
   @state() private sortDirection: SortDirection = 'desc';
+  @state() private openMenuId: string | null = null;
 
   private pollInterval?: ReturnType<typeof setInterval>;
 
@@ -76,7 +77,6 @@ export class PipelineList extends LitElement {
       background: var(--rh-color-surface-lightest, #ffffff);
       border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
       border-radius: var(--rh-border-radius-default, 3px);
-      overflow: hidden;
     }
 
     .pipeline-table {
@@ -143,14 +143,21 @@ export class PipelineList extends LitElement {
       border-block-end: none;
     }
 
-    .pipeline-name {
-      font-weight: var(--rh-font-weight-body-text-medium, 500);
-      font-family: var(--rh-font-family-heading, 'Red Hat Display', sans-serif);
-      color: var(--rh-color-interactive-blue-darker, #0066cc);
+    .pipeline-name-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
     }
 
-    .pipeline-name:hover {
-      text-decoration: underline;
+    .pipeline-name-cell rh-tag {
+      text-transform: uppercase;
+      font-family: var(--rh-font-family-code, 'Red Hat Mono', monospace);
+    }
+
+    .pipeline-name {
+      font-weight: var(--rh-font-weight-body-text-medium, 500);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      color: var(--rh-color-text-primary-on-light, #151515);
     }
 
     .steps-inline {
@@ -160,45 +167,17 @@ export class PipelineList extends LitElement {
       flex-wrap: wrap;
     }
 
-    .step-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      padding: 2px 6px;
-      border-radius: var(--rh-border-radius-default, 3px);
-      font-size: var(--rh-font-size-body-text-xs, 0.75rem);
+    .steps-inline rh-tag {
       font-family: var(--rh-font-family-code, 'Red Hat Mono', monospace);
-      white-space: nowrap;
     }
 
-    .step-chip.pending {
-      background: var(--rh-color-gray-20, #e0e0e0);
-      color: var(--rh-color-gray-60, #6a6e73);
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
-    .step-chip.running {
-      background: var(--rh-color-teal-100, #e0f5f5);
-      color: var(--rh-color-teal-700, #005f60);
-    }
-
-    .step-chip.succeeded {
-      background: var(--rh-color-green-100, #e6f4e4);
-      color: var(--rh-color-green-700, #2e6527);
-    }
-
-    .step-chip.failed {
-      background: var(--rh-color-red-100, #fce8e6);
-      color: var(--rh-color-red-700, #a30d05);
-    }
-
-    .step-chip.skipped {
-      background: var(--rh-color-gray-10, #f5f5f5);
-      color: var(--rh-color-gray-50, #8a8d90);
-      text-decoration: line-through;
-    }
-
-    .step-chip rh-icon {
-      --rh-icon-size: 12px;
+    .step-running {
+      animation: pulse 1.5s ease-in-out infinite;
     }
 
     .created-time {
@@ -264,6 +243,97 @@ export class PipelineList extends LitElement {
     .empty-state p {
       margin: 0 0 var(--rh-space-lg, 24px) 0;
     }
+
+    /* Kebab menu styles */
+    .actions-cell {
+      position: relative;
+      width: 48px;
+      text-align: center;
+    }
+
+    .kebab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: none;
+      border: none;
+      border-radius: var(--rh-border-radius-default, 3px);
+      cursor: pointer;
+      color: var(--rh-color-text-secondary-on-light, #6a6e73);
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .kebab-btn:hover {
+      background: var(--rh-color-surface-light, #e0e0e0);
+      color: var(--rh-color-text-primary-on-light, #151515);
+    }
+
+    .kebab-btn:focus {
+      outline: none;
+    }
+
+    .kebab-btn:focus-visible {
+      outline: 2px solid var(--rh-color-interactive-blue-darker, #0066cc);
+      outline-offset: 2px;
+    }
+
+    .kebab-btn rh-icon {
+      --rh-icon-size: 18px;
+    }
+
+
+    .kebab-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 100;
+      min-width: 150px;
+      background: var(--rh-color-surface-lightest, #ffffff);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      box-shadow: var(--rh-box-shadow-md, 0 4px 6px -1px rgba(21, 21, 21, 0.1));
+      padding: var(--rh-space-xs, 4px) 0;
+    }
+
+    .kebab-menu-item {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
+      width: 100%;
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      background: none;
+      border: none;
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      color: var(--rh-color-text-primary-on-light, #151515);
+      cursor: pointer;
+      text-align: left;
+      transition: background-color 150ms ease;
+    }
+
+    .kebab-menu-item:hover {
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+    }
+
+    .kebab-menu-item:focus {
+      outline: none;
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+    }
+
+    .kebab-menu-item.danger {
+      color: var(--rh-color-red-700, #a30d05);
+    }
+
+    .kebab-menu-item.danger:hover {
+      background: var(--rh-color-red-100, #fce8e6);
+    }
+
+    .kebab-menu-item rh-icon {
+      --rh-icon-size: 16px;
+    }
   `;
 
   connectedCallback() {
@@ -278,6 +348,9 @@ export class PipelineList extends LitElement {
       this.namespace = e.detail.namespace;
       this.loadPipelines();
     }) as EventListener);
+
+    // Close menu when clicking outside
+    document.addEventListener('click', this.handleDocumentClick);
   }
 
   disconnectedCallback() {
@@ -285,7 +358,12 @@ export class PipelineList extends LitElement {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
     }
+    document.removeEventListener('click', this.handleDocumentClick);
   }
+
+  private handleDocumentClick = () => {
+    this.closeMenu();
+  };
 
   private async loadPipelines() {
     try {
@@ -385,6 +463,59 @@ export class PipelineList extends LitElement {
     return this.sortDirection === 'asc' ? 'arrow-up' : 'arrow-down';
   }
 
+  private toggleMenu(e: Event, pipelineId: string) {
+    e.stopPropagation();
+    this.openMenuId = this.openMenuId === pipelineId ? null : pipelineId;
+  }
+
+  private closeMenu() {
+    this.openMenuId = null;
+  }
+
+  private async deletePipeline(e: Event, pipeline: Pipeline) {
+    e.stopPropagation();
+    this.closeMenu();
+
+    const confirmed = confirm(`Are you sure you want to delete pipeline "${pipeline.metadata.name}"?`);
+    if (!confirmed) return;
+
+    try {
+      await k8sClient.deletePipeline(
+        pipeline.metadata.namespace || 'default',
+        pipeline.metadata.name
+      );
+      // Reload the list
+      await this.loadPipelines();
+    } catch (err) {
+      alert(`Failed to delete pipeline: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.loadPipelines();
+
+    // Poll for updates every 5 seconds
+    this.pollInterval = setInterval(() => this.loadPipelines(), 5000);
+
+    // Listen for namespace changes
+    window.addEventListener('namespace-change', ((e: CustomEvent) => {
+      this.namespace = e.detail.namespace;
+      this.loadPipelines();
+    }) as EventListener);
+
+    // Close menu when clicking outside
+    document.addEventListener('click', () => this.closeMenu());
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+    }
+    document.removeEventListener('click', () => this.closeMenu());
+  }
+
   render() {
     if (this.loading) {
       return html`
@@ -472,6 +603,7 @@ export class PipelineList extends LitElement {
                     <rh-icon set="ui" icon=${this.getSortIcon('created')}></rh-icon>
                   </span>
                 </th>
+                <th class="actions-cell">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -497,13 +629,13 @@ export class PipelineList extends LitElement {
       };
     });
 
-    const stepIcon = (stepPhase: string) => {
+    const stepColor = (stepPhase: string): string => {
       switch (stepPhase) {
-        case 'Succeeded': return 'check';
-        case 'Running': return 'in-progress';
-        case 'Failed': return 'close';
-        case 'Skipped': return 'minus';
-        default: return 'clock';
+        case 'Succeeded': return 'green';
+        case 'Running': return 'cyan';
+        case 'Failed': return 'red';
+        case 'Skipped': return 'gray';
+        default: return 'gray';
       }
     };
 
@@ -519,7 +651,10 @@ export class PipelineList extends LitElement {
         }}
       >
         <td>
-          <span class="pipeline-name">${pipeline.metadata.name}</span>
+          <div class="pipeline-name-cell">
+            <rh-tag compact color="purple">pl</rh-tag>
+            <span class="pipeline-name">${pipeline.metadata.name}</span>
+          </div>
         </td>
         <td>
           <status-badge status=${phase} size="sm"></status-badge>
@@ -527,10 +662,9 @@ export class PipelineList extends LitElement {
         <td>
           <div class="steps-inline">
             ${mergedSteps.map(step => html`
-              <span class="step-chip ${step.phase.toLowerCase()}" title="${step.name}: ${step.phase}">
-                <rh-icon set="ui" icon=${stepIcon(step.phase)}></rh-icon>
+              <rh-tag compact color=${stepColor(step.phase)} class="${step.phase === 'Running' ? 'step-running' : ''}" title="${step.name}: ${step.phase}">
                 ${step.name}
-              </span>
+              </rh-tag>
             `)}
           </div>
         </td>
@@ -540,6 +674,29 @@ export class PipelineList extends LitElement {
               ? this.formatTime(pipeline.metadata.creationTimestamp)
               : '-'}
           </span>
+        </td>
+        <td class="actions-cell">
+          <button
+            class="kebab-btn"
+            @click=${(e: Event) => this.toggleMenu(e, pipeline.metadata.name)}
+            aria-label="Actions for ${pipeline.metadata.name}"
+            aria-haspopup="true"
+            aria-expanded=${this.openMenuId === pipeline.metadata.name}
+          >
+            <rh-icon set="ui" icon="ellipsis-vertical"></rh-icon>
+          </button>
+          ${this.openMenuId === pipeline.metadata.name ? html`
+            <div class="kebab-menu" role="menu">
+              <button
+                class="kebab-menu-item danger"
+                role="menuitem"
+                @click=${(e: Event) => this.deletePipeline(e, pipeline)}
+              >
+                <rh-icon set="ui" icon="trash"></rh-icon>
+                Delete
+              </button>
+            </div>
+          ` : ''}
         </td>
       </tr>
     `;

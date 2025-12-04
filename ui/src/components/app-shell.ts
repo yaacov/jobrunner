@@ -141,8 +141,7 @@ export class AppShell extends LitElement {
     }
 
     .main-container {
-      max-width: 1400px;
-      margin: 0 auto;
+      width: 100%;
     }
 
     /* ===== RESPONSIVE ===== */
@@ -208,7 +207,7 @@ export class AppShell extends LitElement {
       
       <!-- Primary Navigation -->
       <rh-navigation-primary color-palette="darkest">
-        <!-- Logo (text only, no icon) -->
+        <!-- Logo -->
         <a slot="logo" href="/" class="logo" @click=${(e: Event) => this.handleNavClick(e, '/monitor')}>
           <span class="logo-text">JobRunner</span>
         </a>
@@ -243,7 +242,7 @@ export class AppShell extends LitElement {
                 ?current-page=${this.isActive('/monitor')}
                 @click=${(e: Event) => this.handleNavClick(e, '/monitor')}
               >
-                <rh-icon set="ui" icon="eye"></rh-icon>
+                <rh-icon set="ui" icon="monitoring" loading="eager"></rh-icon>
                 Monitor
               </rh-navigation-link>
               <rh-navigation-link
@@ -251,7 +250,7 @@ export class AppShell extends LitElement {
                 ?current-page=${this.isActive('/builder')}
                 @click=${(e: Event) => this.handleNavClick(e, '/builder')}
               >
-                <rh-icon set="ui" icon="build"></rh-icon>
+                <rh-icon set="ui" icon="build" loading="eager"></rh-icon>
                 Builder
               </rh-navigation-link>
             </rh-navigation-vertical>

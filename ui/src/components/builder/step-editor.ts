@@ -13,16 +13,35 @@ export class StepEditor extends LitElement {
   @property({ type: Object }) step?: PipelineStep;
   @property({ type: Array }) allSteps: string[] = [];
 
-  @state() private showAdvanced = false;
   @state() private nameError: string | null = null;
+  @state() private showAdvanced = false;
 
   static styles = css`
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      min-height: 0;
+      box-sizing: border-box;
     }
 
     .form-group {
       margin-block-end: var(--rh-space-md, 16px);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .form-group.flex-grow {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .form-group.flex-grow textarea {
+      flex: 1;
+      min-height: 200px;
     }
 
     label {
@@ -49,6 +68,7 @@ export class StepEditor extends LitElement {
       font-size: var(--rh-font-size-body-text-sm, 0.875rem);
       font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
       transition: border-color 150ms ease;
+      box-sizing: border-box;
     }
 
     input:focus,
@@ -143,37 +163,65 @@ export class StepEditor extends LitElement {
       --rh-icon-size: 16px;
     }
 
-    .toggle-btn {
+    /* Custom accordion styling */
+    .accordion {
+      margin-block-start: var(--rh-space-lg, 24px);
+      width: 100%;
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .accordion-header {
       display: flex;
       align-items: center;
       gap: var(--rh-space-sm, 8px);
       width: 100%;
-      padding: var(--rh-space-sm, 8px);
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
       background: var(--rh-color-surface-lighter, #f5f5f5);
-      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
-      border-radius: var(--rh-border-radius-default, 3px);
+      border: none;
       font-size: var(--rh-font-size-body-text-sm, 0.875rem);
       font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      font-weight: var(--rh-font-weight-body-text-medium, 500);
+      color: var(--rh-color-text-primary-on-light, #151515);
       cursor: pointer;
-      transition: all 150ms ease;
+      text-align: left;
     }
 
-    .toggle-btn:hover {
+    .accordion-header:hover {
       background: var(--rh-color-surface-light, #e0e0e0);
     }
 
-    .toggle-btn:focus-visible {
-      outline: var(--rh-border-width-md, 2px) solid var(--rh-color-interactive-blue-darker, #0066cc);
-      outline-offset: 2px;
+    .accordion-header:focus {
+      outline: none;
     }
 
-    .toggle-btn rh-icon {
-      --rh-icon-size: 12px;
+    .accordion-header .chevron {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 6px solid currentColor;
       transition: transform 150ms ease;
     }
 
-    .toggle-btn rh-icon.open {
+    .accordion-header .chevron.open {
       transform: rotate(90deg);
+    }
+
+    .accordion-content {
+      padding: var(--rh-space-md, 16px);
+      border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+    }
+
+    .accordion-content .form-group {
+      margin-block-end: var(--rh-space-md, 16px);
+    }
+
+    .accordion-content .form-group:last-child {
+      margin-block-end: 0;
     }
 
     .runif-section {
@@ -234,7 +282,10 @@ export class StepEditor extends LitElement {
       margin: 0;
     }
 
-    .delete-section {
+    .actions-section {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--rh-space-md, 16px);
       margin-block-start: var(--rh-space-xl, 32px);
       padding-block-start: var(--rh-space-lg, 24px);
       border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
@@ -407,6 +458,10 @@ export class StepEditor extends LitElement {
     this.dispatchEvent(new CustomEvent('delete'));
   }
 
+  private dispatchClose() {
+    this.dispatchEvent(new CustomEvent('close'));
+  }
+
   render() {
     if (!this.step) {
       return html`<p>No step selected</p>`;
@@ -461,7 +516,7 @@ export class StepEditor extends LitElement {
       </div>
 
       <!-- Arguments -->
-      <div class="form-group">
+      <div class="form-group flex-grow">
         <label for="step-args">Arguments <span class="label-optional">(one per line)</span></label>
         <textarea
           id="step-args"
@@ -590,61 +645,66 @@ export class StepEditor extends LitElement {
       ` : ''}
 
       <!-- Advanced Settings -->
-      <button
-        class="toggle-btn"
-        style="margin-block-start: var(--rh-space-lg, 24px)"
-        @click=${() => this.showAdvanced = !this.showAdvanced}
-        aria-expanded=${this.showAdvanced}
-      >
-        <rh-icon set="ui" icon="caret-right" class=${this.showAdvanced ? 'open' : ''}></rh-icon>
-        Advanced Settings
-      </button>
+      <div class="accordion">
+        <button
+          class="accordion-header"
+          @click=${() => this.showAdvanced = !this.showAdvanced}
+          aria-expanded=${this.showAdvanced}
+        >
+          <span class="chevron ${this.showAdvanced ? 'open' : ''}"></span>
+          Advanced Settings
+        </button>
 
-      ${this.showAdvanced ? html`
-        <div style="margin-block-start: var(--rh-space-md, 16px)">
-          <div class="form-group">
-            <label for="backoff-limit">Backoff Limit</label>
-            <input
-              type="number"
-              id="backoff-limit"
-              min="0"
-              .value=${String(this.step.jobSpec.backoffLimit ?? 6)}
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value) || 6;
-                this.dispatchUpdate({
-                  jobSpec: { ...this.step!.jobSpec, backoffLimit: value },
-                });
-              }}
-            />
+        ${this.showAdvanced ? html`
+          <div class="accordion-content">
+            <div class="form-group">
+              <label for="backoff-limit">Backoff Limit</label>
+              <input
+                type="number"
+                id="backoff-limit"
+                min="0"
+                .value=${String(this.step.jobSpec.backoffLimit ?? 6)}
+                @input=${(e: Event) => {
+                  const value = parseInt((e.target as HTMLInputElement).value) || 6;
+                  this.dispatchUpdate({
+                    jobSpec: { ...this.step!.jobSpec, backoffLimit: value },
+                  });
+                }}
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="active-deadline">Active Deadline (seconds)</label>
+              <input
+                type="number"
+                id="active-deadline"
+                min="0"
+                .value=${String(this.step.jobSpec.activeDeadlineSeconds || '')}
+                placeholder="No limit"
+                @input=${(e: Event) => {
+                  const value = parseInt((e.target as HTMLInputElement).value);
+                  this.dispatchUpdate({
+                    jobSpec: {
+                      ...this.step!.jobSpec,
+                      activeDeadlineSeconds: value || undefined,
+                    },
+                  });
+                }}
+              />
+            </div>
           </div>
+        ` : ''}
+      </div>
 
-          <div class="form-group">
-            <label for="active-deadline">Active Deadline (seconds)</label>
-            <input
-              type="number"
-              id="active-deadline"
-              min="0"
-              .value=${String(this.step.jobSpec.activeDeadlineSeconds || '')}
-              placeholder="No limit"
-              @input=${(e: Event) => {
-                const value = parseInt((e.target as HTMLInputElement).value);
-                this.dispatchUpdate({
-                  jobSpec: {
-                    ...this.step!.jobSpec,
-                    activeDeadlineSeconds: value || undefined,
-                  },
-                });
-              }}
-            />
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Delete -->
-      <div class="delete-section">
+      <!-- Actions -->
+      <div class="actions-section">
         <rh-button variant="danger" @click=${this.dispatchDelete}>
           <rh-icon set="ui" icon="trash" slot="icon"></rh-icon>
           Delete Step
+        </rh-button>
+        <rh-button variant="secondary" @click=${this.dispatchClose}>
+          <rh-icon set="ui" icon="close" slot="icon"></rh-icon>
+          Close
         </rh-button>
       </div>
     `;

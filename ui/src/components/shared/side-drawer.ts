@@ -39,6 +39,7 @@ export class SideDrawer extends LitElement {
       width: 400px;
       max-width: 100vw;
       background: var(--rh-color-surface-lightest, #ffffff);
+      border-inline-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
       box-shadow: var(--rh-box-shadow-lg, -4px 0 15px rgba(0, 0, 0, 0.15));
       transform: translateX(100%);
       transition: transform 250ms ease;
@@ -100,8 +101,16 @@ export class SideDrawer extends LitElement {
 
     .drawer-content {
       flex: 1;
+      display: flex;
+      flex-direction: column;
       padding: var(--rh-space-lg, 24px);
       overflow-y: auto;
+      min-height: 0;
+    }
+
+    ::slotted(*) {
+      flex: 1;
+      min-height: 0;
     }
 
     @media (max-width: 480px) {

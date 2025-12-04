@@ -9,6 +9,28 @@
 // RHDS Elements - Import all components via main entry
 // ============================================
 import '@rhds/elements';
+import { RhIcon } from '@rhds/elements/rh-icon/rh-icon.js';
+
+// ============================================
+// Configure Icon Resolver
+// Icons are loaded dynamically from node_modules
+// ============================================
+RhIcon.resolve = async (set: string, icon: string): Promise<Node> => {
+  const response = await fetch(`/node_modules/@rhds/icons/${set}/${icon}.js`);
+  if (!response.ok) {
+    throw new Error(`Failed to load icon: ${set}/${icon}`);
+  }
+  const text = await response.text();
+  // Extract the SVG from the module's template.innerHTML
+  // Format: const t = document.createElement('template');t.innerHTML=`<svg...>`;export default t.content.cloneNode(true);
+  const match = text.match(/innerHTML\s*=\s*`([\s\S]*?)`/);
+  if (match) {
+    const template = document.createElement('template');
+    template.innerHTML = match[1].trim();
+    return template.content.cloneNode(true);
+  }
+  throw new Error(`Could not parse icon: ${set}/${icon}`);
+};
 
 // ============================================
 // Custom Components

@@ -3,12 +3,12 @@
  * Following RHDS patterns for tabs and data display
  */
 
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, svg } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import type { Pipeline, StepStatus, PipelineStep } from '../../types/pipeline.js';
+import type { Pipeline, StepStatus, PipelineStep, PipelineGraph, PipelineEdge, PipelineNode } from '../../types/pipeline.js';
 import { k8sClient } from '../../lib/k8s-client.js';
 import { navigate } from '../../lib/router.js';
-import { pipelineToGraph, layoutGraph, type PipelineGraph } from '../../lib/graph-layout.js';
+import { pipelineToGraph, layoutGraph } from '../../lib/graph-layout.js';
 
 interface RouteLocation {
   params: { namespace?: string; name?: string };
@@ -24,6 +24,7 @@ export class PipelineDetail extends LitElement {
   @state() private selectedStep: string | null = null;
   @state() private activeTab = 0;
   @state() private graph: PipelineGraph | null = null;
+  @state() private openMenuId: string | null = null;
 
   // Cached step data to prevent unnecessary re-renders of step-detail
   private cachedStep: PipelineStep | null = null;
@@ -152,9 +153,12 @@ export class PipelineDetail extends LitElement {
       border: 2px solid var(--rh-color-border-subtle-on-light, #d2d2d2);
       border-radius: var(--rh-border-radius-default, 3px);
       padding: var(--rh-space-md, 16px);
-      min-width: 180px;
+      width: 240px;
+      height: 100px;
+      box-sizing: border-box;
       cursor: pointer;
       transition: all 150ms ease;
+      overflow: hidden;
     }
 
     .graph-node:hover {
@@ -195,9 +199,48 @@ export class PipelineDetail extends LitElement {
       white-space: nowrap;
     }
 
+    .graph-edges {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .graph-edge {
+      fill: none;
+      stroke: var(--rh-color-gray-40, #8a8d90);
+      stroke-width: 2;
+    }
+
+    .graph-edge.success {
+      stroke: var(--rh-color-green-500, #3e8635);
+    }
+
+    .graph-edge.failure {
+      stroke: var(--rh-color-red-500, #c9190b);
+    }
+
+    .graph-arrow {
+      fill: var(--rh-color-gray-40, #8a8d90);
+    }
+
+    .graph-arrow.success {
+      fill: var(--rh-color-green-500, #3e8635);
+    }
+
+    .graph-arrow.failure {
+      fill: var(--rh-color-red-500, #c9190b);
+    }
+
+    rh-table {
+      overflow: visible;
+    }
+
     .timeline-table {
       width: 100%;
       border-collapse: collapse;
+      overflow: visible;
     }
 
     .timeline-table th,
@@ -223,8 +266,106 @@ export class PipelineDetail extends LitElement {
       background: var(--rh-color-surface-lighter, #f5f5f5);
     }
 
+    /* Kebab menu styles for timeline */
+    .actions-cell {
+      position: relative;
+      width: 48px;
+      text-align: center;
+      overflow: visible;
+    }
+
+    .timeline-table tbody {
+      overflow: visible;
+    }
+
+    .timeline-table tbody tr {
+      overflow: visible;
+    }
+
+    .kebab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: none;
+      border: none;
+      border-radius: var(--rh-border-radius-default, 3px);
+      cursor: pointer;
+      color: var(--rh-color-text-secondary-on-light, #6a6e73);
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .kebab-btn:hover {
+      background: var(--rh-color-surface-light, #e0e0e0);
+      color: var(--rh-color-text-primary-on-light, #151515);
+    }
+
+    .kebab-btn:focus {
+      outline: none;
+    }
+
+
+    .kebab-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 1000;
+      min-width: 150px;
+      background: var(--rh-color-surface-lightest, #ffffff);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      box-shadow: var(--rh-box-shadow-md, 0 4px 6px -1px rgba(21, 21, 21, 0.1));
+      padding: var(--rh-space-xs, 4px) 0;
+    }
+
+    .kebab-menu-item {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-sm, 8px);
+      width: 100%;
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      background: none;
+      border: none;
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      color: var(--rh-color-text-primary-on-light, #151515);
+      cursor: pointer;
+      text-align: left;
+      transition: background-color 150ms ease;
+    }
+
+    .kebab-menu-item:hover {
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+    }
+
+    .kebab-menu-item:focus {
+      outline: none;
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+    }
+
+    .kebab-menu-item rh-icon {
+      --rh-icon-size: 16px;
+    }
+
+    .yaml-container {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      box-sizing: border-box;
+    }
+
     .yaml-container rh-code-block {
       display: block;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .yaml-container rh-code-block::part(container),
+    .yaml-container rh-code-block::part(code) {
+      width: 100%;
+      max-width: 100%;
     }
 
     .loading-container,
@@ -243,6 +384,52 @@ export class PipelineDetail extends LitElement {
 
     rh-tabs {
       margin-block-end: var(--rh-space-lg, 24px);
+      /* Override RHDS focus custom properties */
+      --rh-tabs-link-focus-outline: none;
+      --rh-tabs-focus-outline: none;
+    }
+
+    /* Remove blue focus outline from tabs and panels */
+    rh-tabs,
+    rh-tabs::part(tabs),
+    rh-tabs::part(panels) {
+      outline: none !important;
+    }
+
+    rh-tab,
+    rh-tab-panel {
+      outline: none !important;
+      /* Override any RHDS focus variables */
+      --rh-tab-focus-outline: none;
+      --rh-focus-outline-color: transparent;
+      --rh-focus-outline-width: 0;
+    }
+
+
+    rh-tab:focus,
+    rh-tab:focus-within,
+    rh-tab-panel:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    rh-tab:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Target internal button if exposed via ::part */
+    rh-tab::part(button),
+    rh-tab::part(tab) {
+      outline: none !important;
+    }
+
+    rh-tab::part(button):focus,
+    rh-tab::part(button):focus-visible,
+    rh-tab::part(tab):focus,
+    rh-tab::part(tab):focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
     }
   `;
 
@@ -250,6 +437,7 @@ export class PipelineDetail extends LitElement {
     super.connectedCallback();
     this.loadPipeline();
     this.pollInterval = setInterval(() => this.loadPipeline(), 3000);
+    document.addEventListener('click', this.handleDocumentClick);
   }
 
   disconnectedCallback() {
@@ -257,6 +445,20 @@ export class PipelineDetail extends LitElement {
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
     }
+    document.removeEventListener('click', this.handleDocumentClick);
+  }
+
+  private handleDocumentClick = () => {
+    this.closeMenu();
+  };
+
+  private toggleMenu(e: Event, stepName: string) {
+    e.stopPropagation();
+    this.openMenuId = this.openMenuId === stepName ? null : stepName;
+  }
+
+  private closeMenu() {
+    this.openMenuId = null;
   }
 
   private get params(): { namespace: string; name: string } {
@@ -439,7 +641,7 @@ export class PipelineDetail extends LitElement {
       <!-- Side Drawer for Step Details -->
       <side-drawer
         ?open=${!!this.selectedStep}
-        heading="Step Details"
+        heading=${this.selectedStep ? `Step: ${this.selectedStep}` : 'Step Details'}
         @close=${this.closeDrawer}
       >
         ${this.selectedStep ? this.renderStepDetails() : ''}
@@ -505,10 +707,101 @@ export class PipelineDetail extends LitElement {
     const canvasWidth = maxX + padding;
     const canvasHeight = maxY + padding;
 
+    // Build a map of node positions for edge rendering
+    const nodePositions = new Map<string, { x: number; y: number; width: number }>();
+    for (const node of this.graph.nodes) {
+      nodePositions.set(node.id, {
+        x: node.position.x,
+        y: node.position.y,
+        width: nodeWidth,
+      });
+    }
+
+    // Count outgoing edges per source and incoming edges per target
+    const outgoingEdges = new Map<string, PipelineEdge[]>();
+    const incomingEdges = new Map<string, PipelineEdge[]>();
+    for (const edge of this.graph.edges) {
+      if (!outgoingEdges.has(edge.source)) outgoingEdges.set(edge.source, []);
+      if (!incomingEdges.has(edge.target)) incomingEdges.set(edge.target, []);
+      outgoingEdges.get(edge.source)!.push(edge);
+      incomingEdges.get(edge.target)!.push(edge);
+    }
+
     return html`
       <div class="graph-container">
         <div class="graph-canvas" style="width: ${canvasWidth}px; height: ${canvasHeight}px;">
-          ${this.graph.nodes.map(node => {
+          <!-- Render edges first (behind nodes) -->
+          <svg class="graph-edges" width="${canvasWidth}" height="${canvasHeight}">
+            <defs>
+              <marker id="arrow" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 z" class="graph-arrow" />
+              </marker>
+              <marker id="arrow-success" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 z" class="graph-arrow success" />
+              </marker>
+              <marker id="arrow-failure" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 z" class="graph-arrow failure" />
+              </marker>
+            </defs>
+            ${this.graph.edges.map((edge: PipelineEdge) => {
+              const sourceNode = nodePositions.get(edge.source);
+              const targetNode = nodePositions.get(edge.target);
+              if (!sourceNode || !targetNode) return '';
+              
+              // Calculate offset for this edge among all outgoing edges from source
+              const sourceEdges = outgoingEdges.get(edge.source) || [];
+              const sourceIndex = sourceEdges.indexOf(edge);
+              const sourceCount = sourceEdges.length;
+              
+              // Calculate offset for this edge among all incoming edges to target
+              const targetEdges = incomingEdges.get(edge.target) || [];
+              const targetIndex = targetEdges.indexOf(edge);
+              const targetCount = targetEdges.length;
+              
+              // Spread connection points around center (max 120px total spread)
+              const maxSpread = 120;
+              const centerX = nodeWidth / 2;
+              
+              // Calculate X position for source (bottom of node)
+              const sourceSpread = Math.min(maxSpread, (sourceCount - 1) * 25);
+              const sourceStartX = centerX - sourceSpread / 2;
+              const sourceSpacing = sourceCount > 1 ? sourceSpread / (sourceCount - 1) : 0;
+              const sourceOffsetX = sourceCount > 1 
+                ? sourceStartX + sourceIndex * sourceSpacing 
+                : centerX;
+              const x1 = sourceNode.x + sourceOffsetX;
+              const y1 = sourceNode.y + nodeHeight; // Start at bottom of source node
+              
+              // Calculate X position for target (top of node)
+              const targetSpread = Math.min(maxSpread, (targetCount - 1) * 25);
+              const targetStartX = centerX - targetSpread / 2;
+              const targetSpacing = targetCount > 1 ? targetSpread / (targetCount - 1) : 0;
+              const targetOffsetX = targetCount > 1 
+                ? targetStartX + targetIndex * targetSpacing 
+                : centerX;
+              const x2 = targetNode.x + targetOffsetX;
+              const y2 = targetNode.y - 2; // End at top of target node (arrow will point to it)
+              
+              // Create a curved path with control points offset for smoother curves
+              const deltaY = y2 - y1;
+              const controlOffset = Math.max(Math.abs(deltaY) * 0.4, 20);
+              const path = `M ${x1} ${y1} C ${x1} ${y1 + controlOffset}, ${x2} ${y2 - controlOffset}, ${x2} ${y2}`;
+              
+              const edgeClass = edge.type === 'failure' ? 'failure' : edge.type === 'success' ? 'success' : '';
+              const markerId = edge.type === 'failure' ? 'arrow-failure' : edge.type === 'success' ? 'arrow-success' : 'arrow';
+              
+              return svg`
+                <path 
+                  class="graph-edge ${edgeClass}" 
+                  d="${path}"
+                  marker-end="url(#${markerId})"
+                />
+              `;
+            })}
+          </svg>
+          
+          <!-- Render nodes -->
+          ${this.graph.nodes.map((node: PipelineNode) => {
             const phase = node.data.status?.phase?.toLowerCase() || 'pending';
             return html`
               <div
@@ -567,10 +860,28 @@ export class PipelineDetail extends LitElement {
                 </td>
                 <td>${status?.jobStatus?.startTime ? new Date(status.jobStatus.startTime).toLocaleTimeString() : '-'}</td>
                 <td>${this.formatDuration(status?.jobStatus?.startTime, status?.jobStatus?.completionTime)}</td>
-                <td>
-                  <rh-button variant="link" @click=${(e: Event) => { e.stopPropagation(); this.selectStep(spec.name); }}>
-                    View Details
-                  </rh-button>
+                <td class="actions-cell">
+                  <button
+                    class="kebab-btn"
+                    @click=${(e: Event) => this.toggleMenu(e, spec.name)}
+                    aria-label="Actions for ${spec.name}"
+                    aria-haspopup="true"
+                    aria-expanded=${this.openMenuId === spec.name}
+                  >
+                    <rh-icon set="ui" icon="ellipsis-vertical"></rh-icon>
+                  </button>
+                  ${this.openMenuId === spec.name ? html`
+                    <div class="kebab-menu" role="menu">
+                      <button
+                        class="kebab-menu-item"
+                        role="menuitem"
+                        @click=${(e: Event) => { e.stopPropagation(); this.closeMenu(); this.selectStep(spec.name); }}
+                      >
+                        <rh-icon set="ui" icon="eye"></rh-icon>
+                        View Details
+                      </button>
+                    </div>
+                  ` : ''}
                 </td>
               </tr>
             `)}

@@ -33,6 +33,33 @@ body {
   outline-offset: 2px;
 }
 
+/* Remove focus outline from RHDS tabs components */
+rh-tabs,
+rh-tabs:focus,
+rh-tabs:focus-visible {
+  outline: none !important;
+  --rh-tabs-link-focus-outline: none;
+  --rh-tabs-focus-outline: none;
+}
+
+rh-tab,
+rh-tab:focus,
+rh-tab:focus-within,
+rh-tab:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  --rh-tab-focus-outline: none;
+  --rh-focus-outline-color: transparent;
+  --rh-focus-outline-width: 0;
+}
+
+rh-tab-panel,
+rh-tab-panel:focus,
+rh-tab-panel:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Skip link (for accessibility) */
 .skip-link {
   position: absolute;

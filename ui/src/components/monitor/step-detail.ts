@@ -38,68 +38,18 @@ export class StepDetail extends LitElement {
 
   static styles = css`
     :host {
-      display: block;
-      background: var(--rh-color-surface-lightest, #ffffff);
-      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
-      border-radius: var(--rh-border-radius-default, 3px);
-    }
-
-    .header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--rh-space-md, 16px) var(--rh-space-lg, 24px);
-      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
-      background: var(--rh-color-surface-lighter, #f5f5f5);
-    }
-
-    .header h3 {
-      display: flex;
-      align-items: center;
-      gap: var(--rh-space-sm, 8px);
-      margin: 0;
-      font-family: var(--rh-font-family-heading, 'Red Hat Display', sans-serif);
-      font-size: var(--rh-font-size-heading-xs, 1.125rem);
-      font-weight: var(--rh-font-weight-heading-medium, 500);
-    }
-
-    .header h3 rh-icon {
-      --rh-icon-size: 20px;
-      color: var(--rh-color-text-secondary-on-light, #6a6e73);
-    }
-
-    .close-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--rh-space-xs, 4px);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--rh-color-text-secondary-on-light, #6a6e73);
-      border-radius: var(--rh-border-radius-default, 3px);
-      transition: background-color 150ms ease, color 150ms ease;
-    }
-
-    .close-btn:hover {
-      background: var(--rh-color-surface-light, #e0e0e0);
-      color: var(--rh-color-text-primary-on-light, #151515);
-    }
-
-    .close-btn:focus-visible {
-      outline: var(--rh-border-width-md, 2px) solid var(--rh-color-interactive-blue-darker, #0066cc);
-      outline-offset: 2px;
-    }
-
-    .close-btn rh-icon {
-      --rh-icon-size: 20px;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
     }
 
     .summary {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: var(--rh-space-md, 16px);
-      padding: var(--rh-space-md, 16px) var(--rh-space-lg, 24px);
+      padding-block-end: var(--rh-space-md, 16px);
+      margin-block-end: var(--rh-space-md, 16px);
       border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
@@ -124,16 +74,15 @@ export class StepDetail extends LitElement {
 
     .tabs {
       display: flex;
+      margin-block-end: var(--rh-space-md, 16px);
       border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
 
     .tab {
-      flex: 1;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: var(--rh-space-xs, 4px);
-      padding: var(--rh-space-sm, 8px);
+      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
       background: none;
       border: none;
       border-block-end: 2px solid transparent;
@@ -164,9 +113,18 @@ export class StepDetail extends LitElement {
     }
 
     .tab-content {
-      padding: var(--rh-space-md, 16px);
-      max-height: 400px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
       overflow: auto;
+    }
+
+    .logs-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
     }
 
     .logs-header {
@@ -176,9 +134,11 @@ export class StepDetail extends LitElement {
       margin-block-end: var(--rh-space-xs, 4px);
       font-size: var(--rh-font-size-body-text-xs, 0.75rem);
       color: var(--rh-color-text-secondary-on-light, #6a6e73);
+      flex-shrink: 0;
     }
 
     .logs-container {
+      flex: 1;
       background: var(--rh-color-gray-90, #1e1e1e);
       color: var(--rh-color-gray-10, #f0f0f0);
       border-radius: var(--rh-border-radius-default, 3px);
@@ -188,7 +148,6 @@ export class StepDetail extends LitElement {
       white-space: pre-wrap;
       word-break: break-all;
       min-height: 200px;
-      max-height: 300px;
       overflow: auto;
     }
 
@@ -283,7 +242,8 @@ export class StepDetail extends LitElement {
       display: flex;
       justify-content: space-between;
       gap: var(--rh-space-sm, 8px);
-      padding: var(--rh-space-md, 16px) var(--rh-space-lg, 24px);
+      padding-block-start: var(--rh-space-md, 16px);
+      margin-block-start: var(--rh-space-md, 16px);
       border-block-start: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
     }
   `;
@@ -404,9 +364,6 @@ export class StepDetail extends LitElement {
     return this.step?.jobSpec.template.spec.containers[0]?.image || '-';
   }
 
-  private dispatchClose() {
-    this.dispatchEvent(new CustomEvent('close'));
-  }
 
   private async copyToClipboard(text: string) {
     try {
@@ -422,20 +379,6 @@ export class StepDetail extends LitElement {
     }
 
     return html`
-      <header class="header">
-        <h3>
-          <rh-icon set="standard" icon="cube"></rh-icon>
-          ${this.step.name}
-        </h3>
-        <button
-          class="close-btn"
-          @click=${this.dispatchClose}
-          aria-label="Close panel"
-        >
-          <rh-icon set="ui" icon="close"></rh-icon>
-        </button>
-      </header>
-
       <div class="summary">
         <div class="summary-item">
           <span class="summary-label">Status</span>
@@ -554,10 +497,12 @@ export class StepDetail extends LitElement {
     const lineCount = this.logs.split('\n').filter(l => l).length;
 
     return html`
-      <div class="logs-header">
-        <span>Showing last ${lineCount} line${lineCount !== 1 ? 's' : ''} (tail ${LOG_TAIL_LINES})</span>
+      <div class="logs-wrapper">
+        <div class="logs-header">
+          <span>Showing last ${lineCount} line${lineCount !== 1 ? 's' : ''} (tail ${LOG_TAIL_LINES})</span>
+        </div>
+        <div class="logs-container">${this.logs}</div>
       </div>
-      <div class="logs-container">${this.logs}</div>
     `;
   }
 

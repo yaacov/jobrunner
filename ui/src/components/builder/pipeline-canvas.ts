@@ -25,6 +25,8 @@ export class PipelineCanvas extends LitElement {
   @state() private saving = false;
   @state() private error: string | null = null;
   @state() private draggedStepIndex: number | null = null;
+  @state() private existingPipelineNames: Set<string> = new Set();
+  @state() private nameError: string | null = null;
 
   static styles = css`
     :host {
@@ -62,13 +64,33 @@ export class PipelineCanvas extends LitElement {
       gap: var(--rh-space-md, 16px);
     }
 
+    .pipeline-name-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--rh-space-xs, 4px);
+    }
+
+    .pipeline-name-label {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-xs, 4px);
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      font-weight: var(--rh-font-weight-body-text-medium, 500);
+      color: var(--rh-color-text-primary-on-light, #151515);
+    }
+
+    .required-indicator {
+      color: var(--rh-color-red-500, #c9190b);
+      font-weight: var(--rh-font-weight-body-text-bold, 700);
+    }
+
     .pipeline-name-input {
-      padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
+      padding: var(--rh-space-sm, 8px);
       border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
       border-radius: var(--rh-border-radius-default, 3px);
-      font-size: var(--rh-font-size-heading-sm, 1.25rem);
-      font-family: var(--rh-font-family-heading, 'Red Hat Display', sans-serif);
-      font-weight: var(--rh-font-weight-heading-medium, 500);
+      font-size: var(--rh-font-size-body-text-md, 1rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      font-weight: normal;
       min-width: 250px;
       transition: border-color 150ms ease;
     }
@@ -77,6 +99,19 @@ export class PipelineCanvas extends LitElement {
       outline: none;
       border-color: var(--rh-color-interactive-blue-darker, #0066cc);
       box-shadow: 0 0 0 1px var(--rh-color-interactive-blue-darker, #0066cc);
+    }
+
+    .pipeline-name-input.error {
+      border-color: var(--rh-color-red-500, #c9190b);
+    }
+
+    .pipeline-name-input.error:focus {
+      box-shadow: 0 0 0 1px var(--rh-color-red-500, #c9190b);
+    }
+
+    .name-error-text {
+      font-size: var(--rh-font-size-body-text-xs, 0.75rem);
+      color: var(--rh-color-red-700, #a30d05);
     }
 
     .header-actions {
@@ -322,6 +357,62 @@ export class PipelineCanvas extends LitElement {
 
   `;
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.loadExistingPipelines();
+  }
+
+  private async loadExistingPipelines() {
+    try {
+      const namespace = this.pipeline.metadata.namespace || 'default';
+      const pipelines = await k8sClient.listPipelines(namespace);
+      this.existingPipelineNames = new Set(pipelines.map(p => p.metadata.name));
+      
+      // Generate a unique name
+      const baseName = 'new-pipeline';
+      let uniqueName = baseName;
+      let counter = 1;
+      
+      while (this.existingPipelineNames.has(uniqueName)) {
+        counter++;
+        uniqueName = `${baseName}-${counter}`;
+      }
+      
+      this.pipeline = {
+        ...this.pipeline,
+        metadata: {
+          ...this.pipeline.metadata,
+          name: uniqueName,
+        },
+      };
+    } catch (e) {
+      // If we can't load pipelines, just use default name
+      console.warn('Failed to load existing pipelines:', e);
+    }
+  }
+
+  private validatePipelineName(name: string): string | null {
+    const validation = validateStepName(name);
+    if (!validation.valid) {
+      return validation.error || 'Invalid name';
+    }
+    if (this.existingPipelineNames.has(name)) {
+      return `A pipeline named "${name}" already exists in this namespace`;
+    }
+    return null;
+  }
+
+  private updatePipelineName(name: string) {
+    this.nameError = this.validatePipelineName(name);
+    this.pipeline = {
+      ...this.pipeline,
+      metadata: {
+        ...this.pipeline.metadata,
+        name,
+      },
+    };
+  }
+
   private getStepImage(step: PipelineStep): string {
     return step.jobSpec.template.spec.containers[0]?.image || 'default';
   }
@@ -347,8 +438,8 @@ export class PipelineCanvas extends LitElement {
         break;
       case 'kubectl':
         container.image = 'bitnami/kubectl:latest';
-        container.command = ['kubectl'];
-        container.args = ['version', '--client'];
+        container.command = ['sh', '-c'];
+        container.args = ['kubectl version --client'];
         break;
       case 'custom':
         container.image = '';
@@ -456,10 +547,11 @@ export class PipelineCanvas extends LitElement {
   }
 
   private async savePipeline() {
-    // Validate
-    const nameValidation = validateStepName(this.pipeline.metadata.name);
-    if (!nameValidation.valid) {
-      this.error = `Pipeline name: ${nameValidation.error}`;
+    // Validate name
+    const nameValidationError = this.validatePipelineName(this.pipeline.metadata.name);
+    if (nameValidationError) {
+      this.nameError = nameValidationError;
+      this.error = `Pipeline name: ${nameValidationError}`;
       return;
     }
 
@@ -493,22 +585,26 @@ export class PipelineCanvas extends LitElement {
 
       <header class="header">
         <div class="header-left">
-          <input
-            type="text"
-            class="pipeline-name-input"
-            .value=${this.pipeline.metadata.name}
-            @input=${(e: Event) => {
-              this.pipeline = {
-                ...this.pipeline,
-                metadata: {
-                  ...this.pipeline.metadata,
-                  name: (e.target as HTMLInputElement).value,
-                },
-              };
-            }}
-            placeholder="Pipeline name"
-            aria-label="Pipeline name"
-          />
+          <div class="pipeline-name-group">
+            <label class="pipeline-name-label" for="pipeline-name">
+              Pipeline Name <span class="required-indicator">*</span>
+            </label>
+            <input
+              type="text"
+              id="pipeline-name"
+              class="pipeline-name-input ${this.nameError ? 'error' : ''}"
+              .value=${this.pipeline.metadata.name}
+              @input=${(e: Event) => this.updatePipelineName((e.target as HTMLInputElement).value)}
+              placeholder="my-pipeline"
+              required
+              aria-required="true"
+              aria-invalid=${this.nameError ? 'true' : 'false'}
+              aria-describedby=${this.nameError ? 'name-error' : ''}
+            />
+            ${this.nameError ? html`
+              <span id="name-error" class="name-error-text" role="alert">${this.nameError}</span>
+            ` : ''}
+          </div>
         </div>
         <div class="header-actions">
           <rh-button
@@ -548,7 +644,7 @@ export class PipelineCanvas extends LitElement {
               }}
             >
               <span class="step-template-icon">
-                <rh-icon set="ui" icon="terminal"></rh-icon>
+                <rh-icon set="standard" icon="command-line"></rh-icon>
               </span>
               <div class="step-template-info">
                 <h4>Bash Runner</h4>
@@ -594,7 +690,7 @@ export class PipelineCanvas extends LitElement {
               }}
             >
               <span class="step-template-icon">
-                <rh-icon set="standard" icon="cloud-upload"></rh-icon>
+                <rh-icon set="ui" icon="kubernetes-service"></rh-icon>
               </span>
               <div class="step-template-info">
                 <h4>Kubectl Step</h4>
@@ -617,7 +713,7 @@ export class PipelineCanvas extends LitElement {
               }}
             >
               <span class="step-template-icon">
-                <rh-icon set="standard" icon="cube"></rh-icon>
+                <rh-icon set="ui" icon="puzzle-piece"></rh-icon>
               </span>
               <div class="step-template-info">
                 <h4>Custom Step</h4>
@@ -720,6 +816,7 @@ export class PipelineCanvas extends LitElement {
             .allSteps=${this.canvasSteps.map(s => s.name)}
             @update=${(e: CustomEvent) => this.updateStep(this.selectedStep!, e.detail)}
             @delete=${() => { this.removeStep(this.selectedStep!); this.closeDrawer(); }}
+            @close=${this.closeDrawer}
           ></step-editor>
         ` : ''}
       </side-drawer>
