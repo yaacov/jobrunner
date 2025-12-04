@@ -296,6 +296,11 @@ export class StepEditor extends LitElement {
     return this.step?.jobSpec.template.spec.containers[0];
   }
 
+  private isScriptMode(): boolean {
+    const command = this.getContainer()?.command || [];
+    return command.length > 0 && command[command.length - 1] === '-c';
+  }
+
   private dispatchUpdate(updates: Partial<PipelineStep>) {
     this.dispatchEvent(new CustomEvent('update', { detail: updates }));
   }
@@ -359,9 +364,23 @@ export class StepEditor extends LitElement {
   private updateArgs(argsStr: string) {
     if (!this.step) return;
 
-    // Each line becomes an arg, or if single line treat as single arg
-    const lines = argsStr.split('\n').filter(l => l.trim());
-    const args = lines.length > 0 ? lines : [];
+    const container = this.getContainer();
+    const command = container?.command || [];
+    
+    // Check if command ends with -c (e.g., "sh -c" or "python -c")
+    // In this case, the entire script should be a single argument
+    const isScriptMode = command.length > 0 && command[command.length - 1] === '-c';
+    
+    let args: string[];
+    if (isScriptMode) {
+      // For script mode, keep the entire text as a single argument (preserving newlines)
+      const script = argsStr.trim();
+      args = script ? [script] : [];
+    } else {
+      // Otherwise, each line becomes a separate arg
+      const lines = argsStr.split('\n').filter(l => l.trim());
+      args = lines.length > 0 ? lines : [];
+    }
 
     const containers = [...(this.step.jobSpec.template.spec.containers || [])];
     if (containers.length > 0) {
@@ -515,14 +534,17 @@ export class StepEditor extends LitElement {
         />
       </div>
 
-      <!-- Arguments -->
+      <!-- Arguments / Script -->
       <div class="form-group flex-grow">
-        <label for="step-args">Arguments <span class="label-optional">(one per line)</span></label>
+        <label for="step-args">
+          ${this.isScriptMode() ? 'Script' : 'Arguments'}
+          <span class="label-optional">${this.isScriptMode() ? '(passed as single argument to -c)' : '(one per line)'}</span>
+        </label>
         <textarea
           id="step-args"
           .value=${args}
           @input=${(e: Event) => this.updateArgs((e.target as HTMLTextAreaElement).value)}
-          placeholder="echo 'Hello World'"
+          placeholder=${this.isScriptMode() ? 'echo "Hello World"\necho "Line 2"' : 'arg1\narg2'}
         ></textarea>
       </div>
 
