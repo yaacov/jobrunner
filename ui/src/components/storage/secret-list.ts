@@ -29,6 +29,8 @@ export class SecretList extends LitElement {
   @state() private namespace = 'default';
   @state() private searchQuery = '';
   @state() private sortDirection: SortDirection = 'asc';
+  @state() private currentPage = 1;
+  @state() private pageSize = 10;
 
   // Create modal state
   @state() private showCreateModal = false;
@@ -543,6 +545,72 @@ export class SecretList extends LitElement {
       display: flex;
       gap: var(--rh-space-sm, 8px);
     }
+
+    /* Pagination styles */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--rh-space-md, 16px);
+      border-block-start: var(--rh-border-width-sm, 1px) solid
+        var(--rh-color-border-subtle-on-light, #d2d2d2);
+      background: var(--rh-color-surface-lighter, #f5f5f5);
+      border-radius: 0 0 var(--rh-border-radius-default, 3px)
+        var(--rh-border-radius-default, 3px);
+    }
+
+    .pagination-info {
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      color: var(--rh-color-text-secondary-on-light, #6a6e73);
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--rh-space-xs, 4px);
+    }
+
+    .pagination-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 var(--rh-space-sm, 8px);
+      background: var(--rh-color-surface-lightest, #ffffff);
+      border: var(--rh-border-width-sm, 1px) solid var(--rh-color-border-subtle-on-light, #d2d2d2);
+      border-radius: var(--rh-border-radius-default, 3px);
+      cursor: pointer;
+      font-size: var(--rh-font-size-body-text-sm, 0.875rem);
+      font-family: var(--rh-font-family-body-text, 'Red Hat Text', sans-serif);
+      color: var(--rh-color-text-primary-on-light, #151515);
+      transition: all 150ms ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: var(--rh-color-surface-light, #e0e0e0);
+      border-color: var(--rh-color-border-strong-on-light, #8a8d90);
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+      background: var(--rh-color-interactive-blue-darker, #0066cc);
+      border-color: var(--rh-color-interactive-blue-darker, #0066cc);
+      color: var(--rh-color-text-primary-on-dark, #ffffff);
+    }
+
+    .pagination-btn rh-icon {
+      --rh-icon-size: 16px;
+    }
+
+    .pagination-ellipsis {
+      padding: 0 var(--rh-space-xs, 4px);
+      color: var(--rh-color-text-secondary-on-light, #6a6e73);
+    }
   `;
 
   connectedCallback() {
@@ -646,6 +714,47 @@ export class SecretList extends LitElement {
     });
 
     return result;
+  }
+
+  private get totalPages(): number {
+    return Math.ceil(this.filteredSecrets.length / this.pageSize);
+  }
+
+  private get paginatedSecrets(): Secret[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.filteredSecrets.slice(start, end);
+  }
+
+  private get paginationRange(): (number | 'ellipsis')[] {
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const range: (number | 'ellipsis')[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) range.push(i);
+    } else {
+      range.push(1);
+      if (current > 3) range.push('ellipsis');
+      for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+        range.push(i);
+      }
+      if (current < total - 2) range.push('ellipsis');
+      range.push(total);
+    }
+
+    return range;
+  }
+
+  private goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+
+  private handleSearchInput(e: Event) {
+    this.searchQuery = (e.target as HTMLInputElement).value;
+    this.currentPage = 1; // Reset to first page on search
   }
 
   private toggleSort() {
@@ -903,7 +1012,7 @@ export class SecretList extends LitElement {
             class="search-input"
             placeholder="Search secrets..."
             .value=${this.searchQuery}
-            @input=${(e: Event) => (this.searchQuery = (e.target as HTMLInputElement).value)}
+            @input=${this.handleSearchInput}
             aria-label="Search secrets"
           />
           <rh-button @click=${this.openCreateModal}>
@@ -960,14 +1069,59 @@ export class SecretList extends LitElement {
                   </tr>
                 </thead>
                 <tbody>
-                  ${this.filteredSecrets.map(secret => this.renderSecretRow(secret))}
+                  ${this.paginatedSecrets.map(secret => this.renderSecretRow(secret))}
                 </tbody>
               </table>
+              ${this.totalPages > 1 ? this.renderPagination() : ''}
             </div>
           `}
       ${this.showCreateModal ? this.renderCreateModal() : ''}
       ${this.showViewModal && this.viewingSecret ? this.renderViewModal() : ''}
       ${this.showEditModal && this.editingSecret ? this.renderEditModal() : ''}
+    `;
+  }
+
+  private renderPagination() {
+    const start = (this.currentPage - 1) * this.pageSize + 1;
+    const end = Math.min(this.currentPage * this.pageSize, this.filteredSecrets.length);
+    const total = this.filteredSecrets.length;
+
+    return html`
+      <div class="pagination">
+        <span class="pagination-info"> Showing ${start}-${end} of ${total} secrets </span>
+        <div class="pagination-controls">
+          <button
+            class="pagination-btn"
+            @click=${() => this.goToPage(this.currentPage - 1)}
+            ?disabled=${this.currentPage === 1}
+            aria-label="Previous page"
+          >
+            <rh-icon set="ui" icon="caret-left"></rh-icon>
+          </button>
+          ${this.paginationRange.map(item =>
+            item === 'ellipsis'
+              ? html`<span class="pagination-ellipsis">...</span>`
+              : html`
+                  <button
+                    class="pagination-btn ${item === this.currentPage ? 'active' : ''}"
+                    @click=${() => this.goToPage(item)}
+                    aria-label="Page ${item}"
+                    aria-current=${item === this.currentPage ? 'page' : 'false'}
+                  >
+                    ${item}
+                  </button>
+                `
+          )}
+          <button
+            class="pagination-btn"
+            @click=${() => this.goToPage(this.currentPage + 1)}
+            ?disabled=${this.currentPage === this.totalPages}
+            aria-label="Next page"
+          >
+            <rh-icon set="ui" icon="caret-right"></rh-icon>
+          </button>
+        </div>
+      </div>
     `;
   }
 
