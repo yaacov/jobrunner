@@ -671,6 +671,7 @@ export class PipelineDetail extends LitElement {
       <side-drawer
         ?open=${!!this.selectedStep}
         heading=${this.selectedStep ? `Step: ${this.selectedStep}` : 'Step Details'}
+        .showWidthToggle=${true}
         @close=${this.closeDrawer}
       >
         ${this.selectedStep ? this.renderStepDetails() : ''}

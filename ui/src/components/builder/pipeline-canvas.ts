@@ -899,6 +899,7 @@ export class PipelineCanvas extends LitElement {
       <side-drawer
         ?open=${this.showStepEditor && !!this.selectedStep}
         heading="Edit Step"
+        .showWidthToggle=${true}
         @close=${this.closeDrawer}
       >
         ${this.selectedStep
