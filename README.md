@@ -106,11 +106,23 @@ spec:
             restartPolicy: Never
 ```
 
+## Web UI
+
+JobRunner includes a web interface for managing pipelines, storage, and secrets. The UI provides:
+
+- **Monitor**: Real-time pipeline status and logs
+- **Builder**: Visual pipeline editor with drag-and-drop
+- **Storage**: PVC management for shared volumes
+- **Secrets**: Kubernetes secret management
+
+See the [UI documentation](docs/ui.md) for setup instructions.
+
 ## Documentation
 
 For more detailed information, see the following guides:
 
 - [Deployment](docs/deployment.md) - Install JobRunner on your cluster
+- [Web UI](docs/ui.md) - Web interface for managing pipelines
 - [Conditional Execution](docs/conditional-execution.md) - Control step execution based on conditions
 - [Shared Volumes](docs/shared-volumes.md) - Share data between pipeline steps
 - [Pod Templates](docs/pod-templates.md) - Define shared configuration for all steps
