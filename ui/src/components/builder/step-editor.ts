@@ -422,11 +422,7 @@ export class StepEditor extends LitElement {
 
     if (commandStr.includes('python')) return 'python';
     if (commandStr.includes('node') || commandStr.includes('javascript')) return 'javascript';
-    if (
-      commandStr.includes('sh') ||
-      commandStr.includes('bash') ||
-      commandStr.includes('kubectl')
-    )
+    if (commandStr.includes('sh') || commandStr.includes('bash') || commandStr.includes('kubectl'))
       return 'bash';
 
     return 'bash'; // Default to bash

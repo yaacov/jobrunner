@@ -360,8 +360,7 @@ export class PipelineList extends LitElement {
       border-block-start: var(--rh-border-width-sm, 1px) solid
         var(--rh-color-border-subtle-on-light, #d2d2d2);
       background: var(--rh-color-surface-lighter, #f5f5f5);
-      border-radius: 0 0 var(--rh-border-radius-default, 3px)
-        var(--rh-border-radius-default, 3px);
+      border-radius: 0 0 var(--rh-border-radius-default, 3px) var(--rh-border-radius-default, 3px);
     }
 
     .pagination-info {

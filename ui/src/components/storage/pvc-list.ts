@@ -89,7 +89,9 @@ export class PVCList extends LitElement {
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236a6e73' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: var(--rh-space-sm, 8px) center;
-      transition: border-color 150ms ease, box-shadow 150ms ease;
+      transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease;
     }
 
     .search-input:focus {
@@ -409,8 +411,7 @@ export class PVCList extends LitElement {
       border-block-start: var(--rh-border-width-sm, 1px) solid
         var(--rh-color-border-subtle-on-light, #d2d2d2);
       background: var(--rh-color-surface-lighter, #f5f5f5);
-      border-radius: 0 0 var(--rh-border-radius-default, 3px)
-        var(--rh-border-radius-default, 3px);
+      border-radius: 0 0 var(--rh-border-radius-default, 3px) var(--rh-border-radius-default, 3px);
     }
 
     .pagination-info {

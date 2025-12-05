@@ -38,6 +38,8 @@ export class PipelineCanvas extends LitElement {
   @state() private yamlContent = '';
   @state() private yamlError: string | null = null;
 
+  private boundNamespaceHandler = this.handleNamespaceChange.bind(this);
+
   static styles = css`
     :host {
       display: block;
@@ -163,8 +165,7 @@ export class PipelineCanvas extends LitElement {
       gap: var(--rh-space-sm, 8px);
       padding: var(--rh-space-sm, 8px) var(--rh-space-md, 16px);
       background: var(--rh-color-orange-100, #fef3e2);
-      border-block-end: var(--rh-border-width-sm, 1px) solid
-        var(--rh-color-orange-500, #f4b740);
+      border-block-end: var(--rh-border-width-sm, 1px) solid var(--rh-color-orange-500, #f4b740);
       color: var(--rh-color-orange-700, #8a5b00);
       font-size: var(--rh-font-size-body-text-sm, 0.875rem);
     }
@@ -417,7 +418,55 @@ export class PipelineCanvas extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+
+    // Get current namespace from app-shell's namespace selector
+    const currentNamespace = this.getCurrentNamespaceFromShell();
+    if (currentNamespace && currentNamespace !== 'default') {
+      this.pipeline = createEmptyPipeline('new-pipeline', currentNamespace);
+    }
+
+    // Listen for namespace changes from the app-shell
+    window.addEventListener('namespace-change', this.boundNamespaceHandler);
+
     this.loadPipelineData();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('namespace-change', this.boundNamespaceHandler);
+  }
+
+  private getCurrentNamespaceFromShell(): string {
+    // Find the app-shell and get its current namespace from the select element
+    const appShell = document.querySelector('app-shell');
+    if (appShell?.shadowRoot) {
+      const namespaceSelect = appShell.shadowRoot.querySelector(
+        '.namespace-select'
+      ) as HTMLSelectElement;
+      if (namespaceSelect) {
+        return namespaceSelect.value;
+      }
+    }
+    return 'default';
+  }
+
+  private handleNamespaceChange(e: Event) {
+    const customEvent = e as CustomEvent<{ namespace: string }>;
+    const newNamespace = customEvent.detail.namespace;
+
+    // Only update if the pipeline hasn't been modified yet (still has default name pattern)
+    // and we don't have any steps yet (fresh builder state)
+    if (this.canvasSteps.length === 0) {
+      this.pipeline = {
+        ...this.pipeline,
+        metadata: {
+          ...this.pipeline.metadata,
+          namespace: newNamespace,
+        },
+      };
+      // Reload existing pipeline names for the new namespace
+      this.loadExistingPipelines();
+    }
   }
 
   private async loadPipelineData() {
@@ -487,7 +536,8 @@ export class PipelineCanvas extends LitElement {
 
   private async loadExistingPipelines() {
     try {
-      const namespace = this.pipeline.metadata.namespace || 'default';
+      // Use the pipeline's current namespace (which may have been set from the shell)
+      const namespace = this.pipeline.metadata.namespace || this.getCurrentNamespaceFromShell();
       const pipelines = await k8sClient.listPipelines(namespace);
       this.existingPipelineNames = new Set(pipelines.map(p => p.metadata.name));
 
@@ -506,6 +556,7 @@ export class PipelineCanvas extends LitElement {
         metadata: {
           ...this.pipeline.metadata,
           name: uniqueName,
+          namespace,
         },
       };
     } catch (e) {
@@ -860,7 +911,10 @@ export class PipelineCanvas extends LitElement {
                 </rh-button>
               `
             : ''}
-          <rh-button ?disabled=${this.saving || (this.viewMode === 'yaml' && !!this.yamlError)} @click=${this.savePipeline}>
+          <rh-button
+            ?disabled=${this.saving || (this.viewMode === 'yaml' && !!this.yamlError)}
+            @click=${this.savePipeline}
+          >
             <rh-icon set="ui" icon="save" slot="icon"></rh-icon>
             ${this.saving ? 'Saving...' : 'Save Pipeline'}
           </rh-button>
@@ -891,181 +945,181 @@ export class PipelineCanvas extends LitElement {
             <div class="workspace">
               <!-- Left sidebar - Step templates -->
               <aside class="sidebar">
-          <h3>Add Step</h3>
-          <div class="step-templates">
-            <div
-              class="step-template"
-              draggable="true"
-              tabindex="0"
-              role="button"
-              @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'bash')}
-              @click=${() => this.addStep('bash')}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  this.addStep('bash');
-                }
-              }}
-            >
-              <span class="step-template-icon">
-                <rh-icon set="standard" icon="command-line"></rh-icon>
-              </span>
-              <div class="step-template-info">
-                <h4>Bash Runner</h4>
-                <p>UBI Minimal</p>
-              </div>
-            </div>
+                <h3>Add Step</h3>
+                <div class="step-templates">
+                  <div
+                    class="step-template"
+                    draggable="true"
+                    tabindex="0"
+                    role="button"
+                    @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'bash')}
+                    @click=${() => this.addStep('bash')}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.addStep('bash');
+                      }
+                    }}
+                  >
+                    <span class="step-template-icon">
+                      <rh-icon set="standard" icon="command-line"></rh-icon>
+                    </span>
+                    <div class="step-template-info">
+                      <h4>Bash Runner</h4>
+                      <p>UBI Minimal</p>
+                    </div>
+                  </div>
 
-            <div
-              class="step-template"
-              draggable="true"
-              tabindex="0"
-              role="button"
-              @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'python')}
-              @click=${() => this.addStep('python')}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  this.addStep('python');
-                }
-              }}
-            >
-              <span class="step-template-icon">
-                <rh-icon set="ui" icon="code"></rh-icon>
-              </span>
-              <div class="step-template-info">
-                <h4>Python Runner</h4>
-                <p>UBI Python 3.11</p>
-              </div>
-            </div>
+                  <div
+                    class="step-template"
+                    draggable="true"
+                    tabindex="0"
+                    role="button"
+                    @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'python')}
+                    @click=${() => this.addStep('python')}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.addStep('python');
+                      }
+                    }}
+                  >
+                    <span class="step-template-icon">
+                      <rh-icon set="ui" icon="code"></rh-icon>
+                    </span>
+                    <div class="step-template-info">
+                      <h4>Python Runner</h4>
+                      <p>UBI Python 3.11</p>
+                    </div>
+                  </div>
 
-            <div
-              class="step-template"
-              draggable="true"
-              tabindex="0"
-              role="button"
-              @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'kubectl')}
-              @click=${() => this.addStep('kubectl')}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  this.addStep('kubectl');
-                }
-              }}
-            >
-              <span class="step-template-icon">
-                <rh-icon set="ui" icon="kubernetes-service"></rh-icon>
-              </span>
-              <div class="step-template-info">
-                <h4>Kubectl Step</h4>
-                <p>Kubernetes CLI</p>
-              </div>
-            </div>
+                  <div
+                    class="step-template"
+                    draggable="true"
+                    tabindex="0"
+                    role="button"
+                    @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'kubectl')}
+                    @click=${() => this.addStep('kubectl')}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.addStep('kubectl');
+                      }
+                    }}
+                  >
+                    <span class="step-template-icon">
+                      <rh-icon set="ui" icon="kubernetes-service"></rh-icon>
+                    </span>
+                    <div class="step-template-info">
+                      <h4>Kubectl Step</h4>
+                      <p>Kubernetes CLI</p>
+                    </div>
+                  </div>
 
-            <div
-              class="step-template"
-              draggable="true"
-              tabindex="0"
-              role="button"
-              @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'custom')}
-              @click=${() => this.addStep('custom')}
-              @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  this.addStep('custom');
-                }
-              }}
-            >
-              <span class="step-template-icon">
-                <rh-icon set="ui" icon="puzzle-piece"></rh-icon>
-              </span>
-              <div class="step-template-info">
-                <h4>Custom Step</h4>
-                <p>Set your own image</p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- Center - Canvas -->
-        <div
-          class="canvas"
-          @dragover=${this.handleCanvasDragOver}
-          @dragleave=${this.handleCanvasDragLeave}
-          @drop=${this.handleCanvasDrop}
-        >
-          ${this.canvasSteps.length === 0
-            ? html`
-                <div class="canvas-empty">
-                  <rh-icon set="standard" icon="data-science"></rh-icon>
-                  <p>Drag steps here or click to add</p>
+                  <div
+                    class="step-template"
+                    draggable="true"
+                    tabindex="0"
+                    role="button"
+                    @dragstart=${(e: DragEvent) => this.handleTemplateDragStart(e, 'custom')}
+                    @click=${() => this.addStep('custom')}
+                    @keydown=${(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.addStep('custom');
+                      }
+                    }}
+                  >
+                    <span class="step-template-icon">
+                      <rh-icon set="ui" icon="puzzle-piece"></rh-icon>
+                    </span>
+                    <div class="step-template-info">
+                      <h4>Custom Step</h4>
+                      <p>Set your own image</p>
+                    </div>
+                  </div>
                 </div>
-              `
-            : html`
-                <div class="steps-list" role="list">
-                  ${this.canvasSteps.map(
-                    (step, index) => html`
-                      ${index > 0
-                        ? html`
-                            <div class="step-connector" aria-hidden="true">
-                              <div class="step-connector-line"></div>
-                            </div>
-                          `
-                        : ''}
-                      <article
-                        class="step-card ${this.selectedStep === step.name ? 'selected' : ''}"
-                        role="listitem"
-                        tabindex="0"
-                        draggable="true"
-                        @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
-                        @dragend=${this.handleDragEnd}
-                        @dragover=${(e: DragEvent) => this.handleDragOver(e, index)}
-                        @click=${() => this.selectStep(step.name)}
-                        @keydown=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            this.selectStep(step.name);
-                          }
-                        }}
-                      >
-                        <span class="step-drag-handle" aria-label="Drag to reorder">
-                          <rh-icon set="ui" icon="grip-horizontal"></rh-icon>
-                        </span>
-                        <div class="step-info">
-                          <div class="step-name">${step.name}</div>
-                          <div class="step-image">${this.getStepImage(step)}</div>
-                        </div>
-                        <div class="step-actions">
-                          <button
-                            class="step-action-btn"
-                            title="Edit step"
-                            aria-label="Edit ${step.name}"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this.selectStep(step.name);
-                            }}
-                          >
-                            <rh-icon set="ui" icon="edit"></rh-icon>
-                          </button>
-                          <button
-                            class="step-action-btn delete"
-                            title="Delete step"
-                            aria-label="Delete ${step.name}"
-                            @click=${(e: Event) => {
-                              e.stopPropagation();
-                              this.removeStep(step.name);
-                            }}
-                          >
-                            <rh-icon set="ui" icon="trash"></rh-icon>
-                          </button>
-                        </div>
-                      </article>
+              </aside>
+
+              <!-- Center - Canvas -->
+              <div
+                class="canvas"
+                @dragover=${this.handleCanvasDragOver}
+                @dragleave=${this.handleCanvasDragLeave}
+                @drop=${this.handleCanvasDrop}
+              >
+                ${this.canvasSteps.length === 0
+                  ? html`
+                      <div class="canvas-empty">
+                        <rh-icon set="standard" icon="data-science"></rh-icon>
+                        <p>Drag steps here or click to add</p>
+                      </div>
                     `
-                  )}
-                </div>
-              `}
-        </div>
-      </div>
+                  : html`
+                      <div class="steps-list" role="list">
+                        ${this.canvasSteps.map(
+                          (step, index) => html`
+                            ${index > 0
+                              ? html`
+                                  <div class="step-connector" aria-hidden="true">
+                                    <div class="step-connector-line"></div>
+                                  </div>
+                                `
+                              : ''}
+                            <article
+                              class="step-card ${this.selectedStep === step.name ? 'selected' : ''}"
+                              role="listitem"
+                              tabindex="0"
+                              draggable="true"
+                              @dragstart=${(e: DragEvent) => this.handleDragStart(e, index)}
+                              @dragend=${this.handleDragEnd}
+                              @dragover=${(e: DragEvent) => this.handleDragOver(e, index)}
+                              @click=${() => this.selectStep(step.name)}
+                              @keydown=${(e: KeyboardEvent) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  this.selectStep(step.name);
+                                }
+                              }}
+                            >
+                              <span class="step-drag-handle" aria-label="Drag to reorder">
+                                <rh-icon set="ui" icon="grip-horizontal"></rh-icon>
+                              </span>
+                              <div class="step-info">
+                                <div class="step-name">${step.name}</div>
+                                <div class="step-image">${this.getStepImage(step)}</div>
+                              </div>
+                              <div class="step-actions">
+                                <button
+                                  class="step-action-btn"
+                                  title="Edit step"
+                                  aria-label="Edit ${step.name}"
+                                  @click=${(e: Event) => {
+                                    e.stopPropagation();
+                                    this.selectStep(step.name);
+                                  }}
+                                >
+                                  <rh-icon set="ui" icon="edit"></rh-icon>
+                                </button>
+                                <button
+                                  class="step-action-btn delete"
+                                  title="Delete step"
+                                  aria-label="Delete ${step.name}"
+                                  @click=${(e: Event) => {
+                                    e.stopPropagation();
+                                    this.removeStep(step.name);
+                                  }}
+                                >
+                                  <rh-icon set="ui" icon="trash"></rh-icon>
+                                </button>
+                              </div>
+                            </article>
+                          `
+                        )}
+                      </div>
+                    `}
+              </div>
+            </div>
           `}
 
       <!-- Side Drawer for Global Settings -->

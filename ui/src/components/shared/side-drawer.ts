@@ -217,10 +217,7 @@ export class SideDrawer extends LitElement {
                   aria-label="${this.wide ? 'Collapse drawer' : 'Expand drawer'}"
                   title="${this.wide ? 'Collapse drawer' : 'Expand drawer'}"
                 >
-                  <rh-icon
-                    set="ui"
-                    icon="${this.wide ? 'caret-right' : 'caret-left'}"
-                  ></rh-icon>
+                  <rh-icon set="ui" icon="${this.wide ? 'caret-right' : 'caret-left'}"></rh-icon>
                 </button>
               `
             : ''}
