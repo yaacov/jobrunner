@@ -16,21 +16,50 @@ import { RhIcon } from '@rhds/elements/rh-icon/rh-icon.js';
 // Icons are loaded dynamically from node_modules
 // ============================================
 RhIcon.resolve = async (set: string, icon: string): Promise<Node> => {
-  const response = await fetch(`/node_modules/@rhds/icons/${set}/${icon}.js`);
-  if (!response.ok) {
-    throw new Error(`Failed to load icon: ${set}/${icon}`);
+  try {
+    const response = await fetch(`/node_modules/@rhds/icons/${set}/${icon}.js`);
+    if (!response.ok) {
+      console.warn(`Icon not found: ${set}/${icon}`);
+      return createFallbackIcon();
+    }
+    const text = await response.text();
+    // Extract the SVG from the module's template.innerHTML
+    // Format: const t = document.createElement('template');t.innerHTML=`<svg...>`;export default t.content.cloneNode(true);
+    const match = text.match(/innerHTML\s*=\s*`([\s\S]*?)`/);
+    if (match) {
+      const template = document.createElement('template');
+      template.innerHTML = match[1].trim();
+      return template.content.cloneNode(true);
+    }
+    console.warn(`Could not parse icon: ${set}/${icon}`);
+    return createFallbackIcon();
+  } catch (e) {
+    console.warn(`Error loading icon ${set}/${icon}:`, e);
+    return createFallbackIcon();
   }
-  const text = await response.text();
-  // Extract the SVG from the module's template.innerHTML
-  // Format: const t = document.createElement('template');t.innerHTML=`<svg...>`;export default t.content.cloneNode(true);
-  const match = text.match(/innerHTML\s*=\s*`([\s\S]*?)`/);
-  if (match) {
-    const template = document.createElement('template');
-    template.innerHTML = match[1].trim();
-    return template.content.cloneNode(true);
-  }
-  throw new Error(`Could not parse icon: ${set}/${icon}`);
 };
+
+// Create a fallback icon (empty placeholder) when icon loading fails
+function createFallbackIcon(): Node {
+  const template = document.createElement('template');
+  template.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"></svg>`;
+  return template.content.cloneNode(true);
+}
+
+// ============================================
+// Force Eager Icon Loading
+// Override the loading property to always return 'eager'
+// This fixes lazy loading issues in production (including Shadow DOM)
+// ============================================
+Object.defineProperty(RhIcon.prototype, 'loading', {
+  get() {
+    return 'eager';
+  },
+  set() {
+    // Ignore any attempts to set loading - always use eager
+  },
+  configurable: true,
+});
 
 // ============================================
 // Custom Components

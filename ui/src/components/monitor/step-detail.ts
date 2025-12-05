@@ -411,7 +411,7 @@ export class StepDetail extends LitElement {
           aria-selected=${this.activeTab === 0}
           @click=${() => (this.activeTab = 0)}
         >
-          <rh-icon set="ui" icon="terminal"></rh-icon>
+          <rh-icon set="standard" icon="command-line"></rh-icon>
           Logs
         </button>
         <button
@@ -429,7 +429,7 @@ export class StepDetail extends LitElement {
           aria-selected=${this.activeTab === 2}
           @click=${() => (this.activeTab = 2)}
         >
-          <rh-icon set="ui" icon="info-circle"></rh-icon>
+          <rh-icon set="ui" icon="information"></rh-icon>
           Debug
         </button>
       </nav>
@@ -476,7 +476,7 @@ export class StepDetail extends LitElement {
     if (this.logsError) {
       return html`
         <div class="logs-empty">
-          <rh-icon set="ui" icon="error-filled"></rh-icon>
+          <rh-icon set="ui" icon="error-fill"></rh-icon>
           Error: ${this.logsError}
         </div>
       `;
@@ -485,7 +485,7 @@ export class StepDetail extends LitElement {
     if (!this.logs) {
       return html`
         <div class="logs-empty">
-          <rh-icon set="ui" icon="info-circle"></rh-icon>
+          <rh-icon set="ui" icon="information"></rh-icon>
           No logs available yet
         </div>
       `;
@@ -549,7 +549,7 @@ export class StepDetail extends LitElement {
         ${this.events.length === 0
           ? html`
               <div class="logs-empty">
-                <rh-icon set="ui" icon="info-circle"></rh-icon>
+                <rh-icon set="ui" icon="information"></rh-icon>
                 No events available
               </div>
             `

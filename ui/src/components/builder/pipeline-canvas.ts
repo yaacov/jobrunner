@@ -848,7 +848,7 @@ export class PipelineCanvas extends LitElement {
       ${this.error
         ? html`
             <div class="error-banner" role="alert">
-              <rh-icon set="ui" icon="error-filled"></rh-icon>
+              <rh-icon set="ui" icon="error-fill"></rh-icon>
               ${this.error}
             </div>
           `
@@ -906,7 +906,7 @@ export class PipelineCanvas extends LitElement {
                     this.showStepEditor = false;
                   }}
                 >
-                  <rh-icon set="ui" icon="configure" slot="icon"></rh-icon>
+                  <rh-icon set="ui" icon="settings" slot="icon"></rh-icon>
                   Settings
                 </rh-button>
               `
@@ -1051,7 +1051,7 @@ export class PipelineCanvas extends LitElement {
                 ${this.canvasSteps.length === 0
                   ? html`
                       <div class="canvas-empty">
-                        <rh-icon set="standard" icon="data-science"></rh-icon>
+                        <rh-icon set="standard" icon="data"></rh-icon>
                         <p>Drag steps here or click to add</p>
                       </div>
                     `

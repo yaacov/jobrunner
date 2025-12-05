@@ -394,7 +394,7 @@ export class GlobalSettings extends LitElement {
   private renderGeneralTab() {
     return html`
       <div class="section-info">
-        <rh-icon set="ui" icon="info-circle"></rh-icon>
+        <rh-icon set="ui" icon="information"></rh-icon>
         Configure general pipeline settings that apply to all steps.
       </div>
 
@@ -443,7 +443,7 @@ export class GlobalSettings extends LitElement {
 
     return html`
       <div class="section-info">
-        <rh-icon set="ui" icon="info-circle"></rh-icon>
+        <rh-icon set="ui" icon="information"></rh-icon>
         Default pod settings applied to all steps unless overridden.
       </div>
 
@@ -503,7 +503,7 @@ export class GlobalSettings extends LitElement {
 
     return html`
       <div class="section-info">
-        <rh-icon set="ui" icon="info-circle"></rh-icon>
+        <rh-icon set="ui" icon="information"></rh-icon>
         A shared volume is mounted to all steps, allowing them to share files.
       </div>
 
@@ -648,7 +648,7 @@ export class GlobalSettings extends LitElement {
 
     return html`
       <div class="section-info">
-        <rh-icon set="ui" icon="info-circle"></rh-icon>
+        <rh-icon set="ui" icon="information"></rh-icon>
         Environment variables injected into all step containers.
       </div>
 

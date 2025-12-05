@@ -665,7 +665,7 @@ export class PipelineList extends LitElement {
       return html`
         <div class="error-container">
           <h4>
-            <rh-icon set="ui" icon="error-filled"></rh-icon>
+            <rh-icon set="ui" icon="error-fill"></rh-icon>
             Error loading pipelines
           </h4>
           <p>${this.error}</p>
@@ -699,7 +699,7 @@ export class PipelineList extends LitElement {
       ${this.filteredPipelines.length === 0
         ? html`
             <div class="empty-state">
-              <rh-icon set="standard" icon="data-science"></rh-icon>
+              <rh-icon set="standard" icon="data"></rh-icon>
               <h3>No pipelines found</h3>
               <p>Create your first pipeline to get started.</p>
               <rh-cta>

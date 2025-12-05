@@ -992,7 +992,7 @@ export class SecretList extends LitElement {
       return html`
         <div class="error-container">
           <h4>
-            <rh-icon set="ui" icon="error-filled"></rh-icon>
+            <rh-icon set="ui" icon="error-fill"></rh-icon>
             Error loading secrets
           </h4>
           <p>${this.error}</p>

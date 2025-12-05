@@ -680,7 +680,7 @@ export class PVCList extends LitElement {
       return html`
         <div class="error-container">
           <h4>
-            <rh-icon set="ui" icon="error-filled"></rh-icon>
+            <rh-icon set="ui" icon="error-fill"></rh-icon>
             Error loading PVCs
           </h4>
           <p>${this.error}</p>
@@ -714,7 +714,7 @@ export class PVCList extends LitElement {
       ${this.filteredPVCs.length === 0
         ? html`
             <div class="empty-state">
-              <rh-icon set="standard" icon="data-science"></rh-icon>
+              <rh-icon set="standard" icon="data"></rh-icon>
               <h3>${this.searchQuery ? 'No matching PVCs' : 'No PVCs found'}</h3>
               <p>
                 ${this.searchQuery

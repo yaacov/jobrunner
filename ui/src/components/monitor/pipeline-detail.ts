@@ -554,7 +554,7 @@ export class PipelineDetail extends LitElement {
     if (this.error || !this.pipeline) {
       return html`
         <div class="error-container">
-          <rh-icon set="ui" icon="error-filled" style="--rh-icon-size: 32px"></rh-icon>
+          <rh-icon set="ui" icon="error-fill" style="--rh-icon-size: 32px"></rh-icon>
           <span>${this.error || 'Pipeline not found'}</span>
           <rh-button @click=${() => navigate('/monitor')}>
             <rh-icon set="ui" icon="arrow-left" slot="icon"></rh-icon>
@@ -636,7 +636,7 @@ export class PipelineDetail extends LitElement {
         }}
       >
         <rh-tab slot="tab">
-          <rh-icon set="standard" icon="network" slot="icon"></rh-icon>
+          <rh-icon set="ui" icon="network" slot="icon"></rh-icon>
           Graph
         </rh-tab>
         <rh-tab-panel> ${this.renderGraph()} </rh-tab-panel>
@@ -939,7 +939,7 @@ export class PipelineDetail extends LitElement {
                                 this.selectStep(spec.name);
                               }}
                             >
-                              <rh-icon set="ui" icon="eye"></rh-icon>
+                              <rh-icon set="ui" icon="view"></rh-icon>
                               View Details
                             </button>
                           </div>
