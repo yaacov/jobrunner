@@ -37,52 +37,102 @@ A visual pipeline builder and monitor for the JobRunner Kubernetes operator, bui
 - **[ELK.js](https://www.eclipse.org/elk/)** - Automatic graph layout for pipeline visualization
 - **Native URLPattern API** - Client-side routing without external dependencies
 
-## Prerequisites
+---
+
+## Development
+
+### Prerequisites
 
 - [Bun](https://bun.sh/) v1.0 or later
 - Access to a Kubernetes cluster with the JobRunner operator installed
-- `kubectl proxy` running (or configure `K8S_API_URL`)
+- `kubectl` configured with cluster access
 
-## Installation
+### Install Dependencies
 
 ```bash
 cd ui
 bun install
 ```
 
-## Development
-
-### Start the development server
+### Run Development Server
 
 ```bash
-# Start kubectl proxy in another terminal
+# Terminal 1: Start kubectl proxy
 kubectl proxy --port=8001
 
-# Start the UI dev server
+# Terminal 2: Start the UI
 bun run dev
 ```
 
-The UI will be available at http://localhost:3000
+Open http://localhost:3000
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | UI server port |
-| `K8S_API_URL` | `http://localhost:8001` | Kubernetes API URL (kubectl proxy) |
+| `K8S_API_URL` | `http://127.0.0.1:8001` | Kubernetes API URL |
 
-### Available Scripts
+### Scripts
 
 | Script | Description |
 |--------|-------------|
 | `bun run dev` | Start development server |
 | `bun run build` | Build for production |
-| `bun run preview` | Run production server |
-| `bun run typecheck` | Run TypeScript type checking |
+| `bun run preview` | Run production build locally |
+| `bun run typecheck` | TypeScript type checking |
 | `bun run lint` | Run ESLint |
-| `bun run lint:fix` | Run ESLint with auto-fix |
 | `bun run format` | Format code with Prettier |
-| `bun run format:check` | Check code formatting |
+
+---
+
+## Production Container
+
+### Build
+
+```bash
+cd ui
+podman build -t quay.io/yaacov/jobrunner-ui:latest .
+```
+
+### Run
+
+```bash
+# Terminal 1: Start kubectl proxy
+kubectl proxy --port=8001
+
+# Terminal 2: Run the container
+podman run --rm --network=host quay.io/yaacov/jobrunner-ui:latest
+```
+
+Open http://localhost:8080
+
+### Push
+
+```bash
+podman push quay.io/yaacov/jobrunner-ui:latest
+```
+
+---
+
+## Architecture
+
+```
+┌────────────────────────────────────────────────────┐
+│                  Local Machine                     │
+│                                                    │
+│   kubectl proxy ◄───────── Container (nginx)       │
+│   :8001                    :8080                   │
+│       │                        │                   │
+│       ▼                        │                   │
+│   Kubernetes               /api/* /apis/* ─────────┘
+│   API Server               /* → static files       │
+│                                                    │
+└────────────────────────────────────────────────────┘
+                         │
+                         ▼
+                Browser: localhost:8080
+```
 
 ## License
 

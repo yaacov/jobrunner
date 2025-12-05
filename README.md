@@ -115,7 +115,19 @@ JobRunner includes a web interface for managing pipelines, storage, and secrets.
 - **Storage**: PVC management for shared volumes
 - **Secrets**: Kubernetes secret management
 
-See the [UI documentation](docs/ui.md) for setup instructions.
+### Quick Start (Container)
+
+```bash
+# Terminal 1: Start kubectl proxy
+kubectl proxy --port=8001
+
+# Terminal 2: Run the UI container (podman or docker)
+podman run --rm --network=host quay.io/yaacov/jobrunner-ui:latest
+```
+
+Open http://localhost:8080
+
+See the [UI documentation](docs/ui.md) for more details and development setup.
 
 ## Documentation
 
