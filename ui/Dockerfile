@@ -42,6 +42,9 @@ USER 0
 COPY --from=builder /app/dist/ /opt/app-root/src/
 COPY --from=builder /app/public/ /opt/app-root/src/
 
+# Copy RHDS icons (loaded dynamically at runtime)
+COPY --from=builder /app/node_modules/@rhds/icons/ /opt/app-root/src/node_modules/@rhds/icons/
+
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
