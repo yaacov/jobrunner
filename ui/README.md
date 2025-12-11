@@ -4,7 +4,7 @@ A visual pipeline builder and monitor for the JobRunner Kubernetes operator, bui
 
 ## Demo
 
-https://github.com/yaacov/jobrunner/raw/main/docs/ui-demo.mp4
+https://github.com/yaacov/jobrunner/raw/main/docs/ui-demo.webm
 
 ## Features
 
