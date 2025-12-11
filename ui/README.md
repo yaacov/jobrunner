@@ -2,6 +2,10 @@
 
 A visual pipeline builder and monitor for the JobRunner Kubernetes operator, built with [Lit](https://lit.dev/) web components and the [Red Hat Design System](https://ux.redhat.com/).
 
+## Demo
+
+https://github.com/yaacov/jobrunner/raw/main/docs/ui-demo.webm
+
 ## Features
 
 ### Pipeline Monitor
