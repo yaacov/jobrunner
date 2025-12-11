@@ -460,7 +460,7 @@ export class PipelineList extends LitElement {
   private navigateToPipeline(pipeline: Pipeline) {
     const namespace = pipeline.metadata.namespace || 'default';
     const name = pipeline.metadata.name;
-    navigate(`/monitor/${namespace}/${name}`);
+    navigate(`/pipelines/${namespace}/${name}`);
   }
 
   private getCompletedSteps(steps: StepStatus[]): number {

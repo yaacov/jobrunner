@@ -187,9 +187,9 @@ export function navigate(path: string): void {
  */
 export function initRouter(outlet: HTMLElement): void {
   router.setRoutes([
-    { path: '/', component: 'pipeline-list', redirect: '/monitor' },
-    { path: '/monitor', component: 'pipeline-list' },
-    { path: '/monitor/:namespace/:name', component: 'pipeline-detail' },
+    { path: '/', component: 'pipeline-list', redirect: '/pipelines' },
+    { path: '/pipelines', component: 'pipeline-list' },
+    { path: '/pipelines/:namespace/:name', component: 'pipeline-detail' },
     { path: '/builder', component: 'pipeline-canvas' },
     { path: '/builder/:namespace/:name', component: 'pipeline-canvas' },
     { path: '/storage', component: 'pvc-list' },

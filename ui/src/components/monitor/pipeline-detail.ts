@@ -506,7 +506,7 @@ export class PipelineDetail extends LitElement {
         this.pipeline.metadata.namespace || 'default',
         this.pipeline.metadata.name
       );
-      navigate('/monitor');
+      navigate('/pipelines');
     } catch (e) {
       alert(`Failed to delete pipeline: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
@@ -556,7 +556,7 @@ export class PipelineDetail extends LitElement {
         <div class="error-container">
           <rh-icon set="ui" icon="error-fill" style="--rh-icon-size: 32px"></rh-icon>
           <span>${this.error || 'Pipeline not found'}</span>
-          <rh-button @click=${() => navigate('/monitor')}>
+          <rh-button @click=${() => navigate('/pipelines')}>
             <rh-icon set="ui" icon="arrow-left" slot="icon"></rh-icon>
             Back to Pipelines
           </rh-button>
@@ -571,10 +571,10 @@ export class PipelineDetail extends LitElement {
         <ol>
           <li>
             <a
-              href="/monitor"
+              href="/pipelines"
               @click=${(e: Event) => {
                 e.preventDefault();
-                navigate('/monitor');
+                navigate('/pipelines');
               }}
               >Pipelines</a
             >

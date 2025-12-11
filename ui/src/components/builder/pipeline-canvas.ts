@@ -835,7 +835,7 @@ export class PipelineCanvas extends LitElement {
     try {
       const namespace = pipelineToSave.metadata.namespace || 'default';
       await k8sClient.createPipeline(namespace, pipelineToSave);
-      navigate(`/monitor/${namespace}/${pipelineToSave.metadata.name}`);
+      navigate(`/pipelines/${namespace}/${pipelineToSave.metadata.name}`);
     } catch (e) {
       this.error = e instanceof Error ? e.message : 'Failed to save pipeline';
     } finally {

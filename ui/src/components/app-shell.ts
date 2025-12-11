@@ -12,7 +12,7 @@ import { navigate } from '../lib/router.js';
 export class AppShell extends LitElement {
   @state() private namespace = 'default';
   @state() private namespaces: string[] = ['default'];
-  @state() private currentPath = '/monitor';
+  @state() private currentPath = '/pipelines';
 
   static styles = css`
     :host {
@@ -215,7 +215,7 @@ export class AppShell extends LitElement {
           slot="logo"
           href="/"
           class="logo"
-          @click=${(e: Event) => this.handleNavClick(e, '/monitor')}
+          @click=${(e: Event) => this.handleNavClick(e, '/pipelines')}
         >
           <span class="logo-text">JobRunner</span>
         </a>
@@ -244,20 +244,12 @@ export class AppShell extends LitElement {
           <div class="nav-section">
             <rh-navigation-vertical>
               <rh-navigation-link
-                href="/monitor"
-                ?current-page=${this.isActive('/monitor')}
-                @click=${(e: Event) => this.handleNavClick(e, '/monitor')}
+                href="/pipelines"
+                ?current-page=${this.isActive('/pipelines')}
+                @click=${(e: Event) => this.handleNavClick(e, '/pipelines')}
               >
                 <rh-icon set="ui" icon="monitoring" loading="eager"></rh-icon>
-                Monitor
-              </rh-navigation-link>
-              <rh-navigation-link
-                href="/builder"
-                ?current-page=${this.isActive('/builder')}
-                @click=${(e: Event) => this.handleNavClick(e, '/builder')}
-              >
-                <rh-icon set="ui" icon="build" loading="eager"></rh-icon>
-                Builder
+                Pipelines
               </rh-navigation-link>
               <rh-navigation-link
                 href="/storage"
