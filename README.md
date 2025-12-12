@@ -129,6 +129,10 @@ Open http://localhost:8080
 
 See the [UI documentation](docs/ui.md) for more details and development setup.
 
+### UI Demo
+
+https://github.com/yaacov/jobrunner/raw/main/docs/ui-demo.webm
+
 ## Documentation
 
 For more detailed information, see the following guides:
